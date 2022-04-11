@@ -1966,11 +1966,11 @@ void MusicXmlInput::ReadMusicXmlDirection(
         dir->SetStaff(dir->AttStaffIdent::StrToXsdPositiveIntegerList("1"));
         if (xmlCoda.attribute("id")) dir->SetUuid(xmlCoda.attribute("id").as_string());
         Rend *rend = new Rend;
-        rend->SetFontname("VerovioText");
+        rend->SetFontname("Leipzig");
         rend->SetFontstyle(FONTSTYLE_normal);
         rend->SetHalign(HORIZONTALALIGNMENT_center);
         Text *text = new Text();
-        std::wstring codaSign = UTF8to16("\xF0\x9D\x84\x8C");
+        std::wstring codaSign = L"\xE048"; // UTF8to16("\xF0\x9D\x84\x8C");
         text->SetText(codaSign);
         rend->AddChild(text);
         dir->AddChild(rend);
@@ -2392,11 +2392,11 @@ void MusicXmlInput::ReadMusicXmlDirection(
         dir->SetStaff(dir->AttStaffIdent::StrToXsdPositiveIntegerList("1"));
         if (xmlSegno.attribute("id")) dir->SetUuid(xmlSegno.attribute("id").as_string());
         Rend *rend = new Rend;
-        rend->SetFontname("VerovioText");
+        rend->SetFontname("Leipzig");
         rend->SetFontstyle(FONTSTYLE_normal);
         rend->SetHalign(HORIZONTALALIGNMENT_center);
         Text *text = new Text();
-        std::wstring segnoSign = UTF8to16("\xF0\x9D\x84\x8B");
+        std::wstring segnoSign = L"\xE047"; // UTF8to16("\xF0\x9D\x84\x8B");
         text->SetText(segnoSign);
         rend->AddChild(text);
         dir->AddChild(rend);
