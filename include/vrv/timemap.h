@@ -30,11 +30,14 @@ class GenerateTimemapParams;
 struct TimemapEntry {
     double tempo = -1000.0;
     double qstamp;
-    std::vector<std::string> notesOn;
-    std::vector<std::string> notesOff;
+    std::map<int, std::pair<int, std::vector<std::string>>> notesOn;    // pitch:staff:ids
+    std::map<int, std::pair<int, std::vector<std::string>>> notesOff;
     std::vector<std::string> restsOn;
     std::vector<std::string> restsOff;
     std::string measureOn;
+    int measureNo;
+    int systemNo;
+    int pageNo;
 };
 
 //----------------------------------------------------------------------------
