@@ -62,6 +62,7 @@
 #include "verse.h"
 #include "vrv.h"
 #include "zone.h"
+#include "midiext.h"
 
 //----------------------------------------------------------------------------
 
@@ -315,7 +316,7 @@ void Doc::CalculateTimemap()
     m_timemapTempo = m_options->m_midiTempoAdjustment.GetValue();
 }
 
-void Doc::ExportMIDI(smf::MidiFile *midiFile)
+void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
 {
 
     if (!Doc::HasTimemap()) {
@@ -405,7 +406,8 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
             }
         }
 
-        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
+        int index = 0;
+        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers, ++index) {
             filters.clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
@@ -416,11 +418,15 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
             Functor generateMIDI(&Object::GenerateMIDI);
             Functor generateMIDIEnd(&Object::GenerateMIDIEnd);
             GenerateMIDIParams generateMIDIParams(this, midiFile, &generateMIDI);
+            generateMIDIParams.m_midiExt = midiExt;
             generateMIDIParams.m_midiChannel = midiChannel;
             generateMIDIParams.m_midiTrack = midiTrack;
             generateMIDIParams.m_transSemi = transSemi;
             generateMIDIParams.m_currentTempo = tempo;
             generateMIDIParams.m_deferredNotes = initMIDIParams.m_deferredNotes;
+            generateMIDIParams.m_repeatStartTime = 0;
+            generateMIDIParams.m_repeatAdditionalTime = 0;
+            generateMIDIParams.m_handleRepeat = (index + 1 == (int)staves->second.child.size());
 
             // LogDebug("Exporting track %d ----------------", midiTrack);
             this->Process(&generateMIDI, &generateMIDIParams, &generateMIDIEnd, &filters);
@@ -441,7 +447,7 @@ bool Doc::ExportTimemap(std::string &output, bool includeRests, bool includeMeas
     }
     Timemap timemap;
     Functor generateTimemap(&Object::GenerateTimemap);
-    GenerateTimemapParams generateTimemapParams(&timemap, &generateTimemap);
+    GenerateTimemapParams generateTimemapParams(this, &timemap, &generateTimemap);
     this->Process(&generateTimemap, &generateTimemapParams);
 
     timemap.ToJson(output, includeRests, includeMeasures);

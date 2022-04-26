@@ -466,6 +466,7 @@ public:
      */
     int GenerateMIDI(FunctorParams *functorParams) override;
 
+    int GenerateMIDIEnd(FunctorParams *functorParams) override;
     /**
      * See Object::GenerateTimemap
      */

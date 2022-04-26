@@ -1715,6 +1715,9 @@ public:
         m_accentedGraceNote = false;
         m_functor = functor;
         m_doc = doc;
+        m_repeatStartTime = 0;
+        m_repeatAdditionalTime = 0;
+        m_midiExt = nullptr;
     }
     smf::MidiFile *m_midiFile;
     int m_midiChannel;
@@ -1726,10 +1729,15 @@ public:
     std::map<Note *, MIDINoteSequence> m_expandedNotes;
     std::map<Note *, double> m_deferredNotes;
     MIDIChordSequence m_graceNotes;
+    std::vector<Object*> m_graceRefs;
     bool m_accentedGraceNote;
     Functor *m_functor;
     std::vector<MIDIHeldNote> m_heldNotes;
     Doc *m_doc;
+    double m_repeatStartTime;
+    double m_repeatAdditionalTime;
+    bool m_handleRepeat;
+    MidiExt *m_midiExt;
 };
 
 //----------------------------------------------------------------------------
@@ -1746,17 +1754,19 @@ public:
 
 class GenerateTimemapParams : public FunctorParams {
 public:
-    GenerateTimemapParams(Timemap *timemap, Functor *functor)
+    GenerateTimemapParams(Doc *doc, Timemap *timemap, Functor *functor)
     {
         m_scoreTimeOffset = 0.0;
         m_realTimeOffsetMilliseconds = 0;
         m_currentTempo = MIDI_TEMPO;
+        m_doc = doc;
         m_timemap = timemap;
         m_functor = functor;
     }
     double m_scoreTimeOffset;
     double m_realTimeOffsetMilliseconds;
     double m_currentTempo;
+    Doc *m_doc;
     Timemap *m_timemap;
     Functor *m_functor;
 };

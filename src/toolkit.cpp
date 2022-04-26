@@ -1419,6 +1419,14 @@ std::string Toolkit::RenderToMIDI()
     return outputstr;
 }
 
+void Toolkit::RenderToMIDI(smf::MidiFile* midiFile, MidiExt* midiExt) {
+    this->ResetLogBuffer();
+
+    midiFile->absoluteTicks();
+    m_doc.ExportMIDI(midiFile, midiExt);
+    midiFile->sortTracks();
+}
+
 std::string Toolkit::RenderToPAE()
 {
     this->ResetLogBuffer();

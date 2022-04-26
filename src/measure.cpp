@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <math.h>
+#include <midiext.h>
 
 //----------------------------------------------------------------------------
 
@@ -1589,15 +1590,68 @@ int Measure::GenerateMIDI(FunctorParams *functorParams)
     assert(params);
 
     // Here we need to update the m_totalTime from the starting time of the measure.
-    params->m_totalTime = m_scoreTimeOffset.back();
+    params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalTime;
+
+    if (params->m_midiExt) {
+        params->m_midiExt->AddMeasure(params->m_totalTime * params->m_midiFile->getTPQ(), std::stoi(this->GetN()) - 1);
+    }
 
     if (m_currentTempo != params->m_currentTempo) {
-        params->m_midiFile->addTempo(0, m_scoreTimeOffset.back() * params->m_midiFile->getTPQ(), m_currentTempo);
+        params->m_midiFile->addTempo(0, params->m_totalTime * params->m_midiFile->getTPQ(), m_currentTempo);
         params->m_currentTempo = m_currentTempo;
     }
 
     return FUNCTOR_CONTINUE;
 }
+
+int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
+{
+    GenerateMIDIParams *params = vrv_params_cast<GenerateMIDIParams *>(functorParams);
+    assert(params);
+
+    if (GetLeft() == BARRENDITION_rptstart) {
+        params->m_repeatStartTime = params->m_totalTime;
+    }
+
+    if (GetRight() == BARRENDITION_rptend || GetRight() == BARRENDITION_rptboth) {
+
+        const double scoreTimeIncrement
+                = m_measureAligner.GetRightAlignment()->GetTime() * /* params->m_multiRestFactor * */ DURATION_4 / DUR_MAX;
+        double endtime = params->m_totalTime + scoreTimeIncrement;
+        // Sameas not taken into account for now
+        double starttime = params->m_repeatStartTime;
+        auto repeatAdditionalTime = endtime - starttime;
+        params->m_repeatAdditionalTime += repeatAdditionalTime;
+
+        if (GetRight() == BARRENDITION_rptboth) {
+            params->m_repeatStartTime = endtime;
+        }
+
+        if (params->m_handleRepeat) {
+            int tpq = params->m_midiFile->getTPQ();
+
+            // filter last beat and copy all notes
+            smf::MidiEvent event;
+            int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
+            for (int i = 0; i < eventcount; i++) {
+                event = params->m_midiFile->getEvent(params->m_midiTrack, i);
+                if (event.tick >= starttime * tpq && event.tick < endtime * tpq) {
+                    auto tick = event.tick + repeatAdditionalTime * tpq;
+                    params->m_midiFile->addEvent(params->m_midiTrack, tick, event);
+                    fprintf(stdout, "[MidiFile]addEvent track:%d, from: %d, tick:%d\n",params->m_midiTrack, (int)(params->m_repeatStartTime * tpq), (int)tick);
+                }
+            }
+
+            if (params->m_midiExt) {
+                params->m_midiExt->CopyMeasures(starttime * tpq, endtime * tpq, repeatAdditionalTime * tpq);
+                params->m_midiExt->CopyTimeEntry(starttime * tpq, endtime * tpq, repeatAdditionalTime * tpq);
+            }
+        }
+    }
+
+    return FUNCTOR_CONTINUE;
+}
+
 
 int Measure::GenerateTimemap(FunctorParams *functorParams)
 {

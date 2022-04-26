@@ -41,6 +41,7 @@
 //----------------------------------------------------------------------------
 
 #include "MidiFile.h"
+#include "midiext.h"
 
 namespace vrv {
 
@@ -828,7 +829,29 @@ void Note::GenerateGraceNoteMIDI(FunctorParams *functorParams, double startTime,
         }
     }
 
-    for (const MIDIChord &chord : params->m_graceNotes) {
+    int index = 0;
+    for (auto iter = params->m_graceNotes.begin(); iter != params->m_graceNotes.end(); iter++, index++) {
+        if (params->m_midiExt) {
+            auto object = params->m_graceRefs[index];
+            if (object->Is(CHORD)) {
+                auto chord = dynamic_cast<Chord*>(object);
+                const ArrayOfObjects *notes = chord->GetList(chord);
+                assert(notes);
+                for (Object *obj : *notes) {
+                    Note *note = vrv_cast<Note *>(obj);
+                    assert(note);
+                    params->m_midiExt->AddNote(startTime * tpq, note);
+                }
+            } else if (object->Is(NOTE)) {
+                Note *note = vrv_cast<Note *>(object);
+                assert(note);
+                params->m_midiExt->AddNote(startTime * tpq, note);
+            } else {
+                fprintf(stdout, "what\n");
+            }
+        }
+
+        const MIDIChord &chord = *iter;
         const double stopTime = startTime + graceNoteDur;
         for (int pitch : chord.pitches) {
             params->m_midiFile->addNoteOn(params->m_midiTrack, startTime * tpq, channel, pitch, velocity);
@@ -1444,6 +1467,7 @@ int Note::GenerateMIDI(FunctorParams *functorParams)
         }
 
         params->m_graceNotes.push_back({ { pitch }, quarterDuration });
+        params->m_graceRefs.push_back(this);
 
         bool accented = (this->GetGrace() == GRACE_acc);
         GraceGrp *graceGrp = vrv_cast<GraceGrp *>(this->GetFirstAncestor(GRACEGRP));
@@ -1464,12 +1488,17 @@ int Note::GenerateMIDI(FunctorParams *functorParams)
     if (!params->m_graceNotes.empty()) {
         this->GenerateGraceNoteMIDI(functorParams, startTime, tpq, channel, velocity);
         params->m_graceNotes.clear();
+        params->m_graceRefs.clear();
     }
 
     // Check if note is deferred
     if (params->m_deferredNotes.find(this) != params->m_deferredNotes.end()) {
         startTime += params->m_deferredNotes.at(this);
         params->m_deferredNotes.erase(this);
+    }
+    
+    if (params->m_midiExt) {
+        params->m_midiExt->AddNote(startTime * tpq, this);
     }
 
     // Check if note was expanded into sequence of short notes due to trills/tremolandi

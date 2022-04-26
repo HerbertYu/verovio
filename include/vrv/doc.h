@@ -27,6 +27,7 @@ class Glyph;
 class Pages;
 class Page;
 class Score;
+class MidiExt;
 
 enum DocType { Raw = 0, Rendering, Transcription, Facs };
 
@@ -225,7 +226,7 @@ public:
      * Export the document to a MIDI file.
      * Run trough all the layers and fill the midi file content.
      */
-    void ExportMIDI(smf::MidiFile *midiFile);
+    void ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt = nullptr);
 
     /**
      * Extract a timemap from the document to a JSON string.
