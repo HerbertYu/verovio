@@ -38,16 +38,16 @@ namespace vrv {
     MidiExt::~MidiExt() {}
 
     void MidiExt::Reset() {
-        m_map.clear();
+        m_entries.clear();
         m_measureTicks.clear();
     }
 
     void MidiExt::AddNote(int tick, Note *object) {
-        if (m_map.count(tick) == 0) {
+        if (m_entries.count(tick) == 0) {
             MidiExtEntry emptyEntry;
-            m_map[tick] = emptyEntry;
+            m_entries[tick] = emptyEntry;
         }
-        MidiExtEntry *entry = &m_map[tick];
+        MidiExtEntry *entry = &m_entries[tick];
 
         DurationInterface *interface = object->GetDurationInterface();
         assert(interface);
@@ -108,17 +108,24 @@ namespace vrv {
         if (page) {
             entry->pageNo = page->GetPageIdx();
         }
-        
+
         fprintf(stdout, "[MidiExt]addNote track:%d,tick:%d,note:%d\n", staffNo, tick, pitch);
     }
 
     MidiExtEntry *MidiExt::GetTimeEntry(int tick) {
-        auto iter = m_map.find(tick);
-        return iter != m_map.end() ? &iter->second : nullptr;
+        auto iter = m_entries.find(tick);
+        return iter != m_entries.end() ? &iter->second : nullptr;
     }
 
-    void MidiExt::AddMeasure(int tick, int measure) {
-        m_measureTicks[tick] = measure;
+    void MidiExt::AddMeasure(int tick, Measure *measure) {
+        m_measureTicks[tick] = std::stoi(measure->GetN()) - 1;
+        auto system = dynamic_cast<System *>(measure->GetFirstAncestor(SYSTEM));
+        if (system) {
+            auto uuid = system->GetUuid();
+            if (m_systemUuid.count(uuid) == 0) {
+                m_systemUuid[uuid] = m_systemUuid.size();
+            }
+        }
     }
 
     void MidiExt::CopyMeasures(int fromTick, int endTick, int addTick) {
@@ -130,11 +137,11 @@ namespace vrv {
     }
 
     void MidiExt::CopyTimeEntry(int fromTick, int endTick, int addTick) {
-        auto iter = std::find_if(m_map.begin(), m_map.end(), [fromTick](const std::pair<int, MidiExtEntry> &entry) {
+        auto iter = std::find_if(m_entries.begin(), m_entries.end(), [fromTick](const std::pair<int, MidiExtEntry> &entry) {
             return entry.first >= fromTick;
         });
-        while (iter != m_map.end() && iter->first < endTick) {
-            m_map[iter->first + addTick] = iter->second;
+        while (iter != m_entries.end() && iter->first < endTick) {
+            m_entries[iter->first + addTick] = iter->second;
             iter++;
         }
     }
@@ -144,6 +151,10 @@ namespace vrv {
     }
 
     const std::map<int, MidiExtEntry> &MidiExt::GetEntries() const {
-        return m_map;
+        return m_entries;
+    }
+
+    const std::map<std::string, int> &MidiExt::GetSystems() const {
+        return m_systemUuid;
     }
 } // namespace vrv

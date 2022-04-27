@@ -18,8 +18,11 @@
 
 namespace vrv {
 
-class Object;
-class Note;
+    class Object;
+
+    class Note;
+
+    class Measure;
 
 //----------------------------------------------------------------------------
 // TimemapEntry
@@ -28,12 +31,12 @@ class Note;
 /**
  * Helper struct to store timemap entries
  */
-struct MidiExtEntry {
-    std::map<int, std::pair<int, std::vector<std::string>>> notesOn;    // pitch:staff:ids
-    std::map<int, std::pair<int, std::vector<std::string>>> notesOff;
-    int measureNo;
-    int pageNo;
-};
+    struct MidiExtEntry {
+        std::map<int, std::pair<int, std::vector<std::string>>> notesOn;    // pitch:staff:ids
+        std::map<int, std::pair<int, std::vector<std::string>>> notesOff;
+        int measureNo;
+        int pageNo;
+    };
 
 //----------------------------------------------------------------------------
 // Timemap
@@ -42,43 +45,46 @@ struct MidiExtEntry {
 /**
  * This class holds a timemap for exporting onset / offset values.
  */
-class MidiExt {
-public:
-    /**
-     * @name Constructors, destructors, and other standard methods
-     */
-    ///@{
-    explicit MidiExt();
-    virtual ~MidiExt();
-    ///@}
+    class MidiExt {
+    public:
+        /**
+         * @name Constructors, destructors, and other standard methods
+         */
+        ///@{
+        explicit MidiExt();
 
-    /** Resets the timemap */
-    void Reset();
+        virtual ~MidiExt();
+        ///@}
 
-    void AddNote(int tick, Note* note);
+        /** Resets the timemap */
+        void Reset();
 
-    MidiExtEntry* GetTimeEntry(int tick);
+        void AddNote(int tick, Note *note);
 
-    void AddMeasure(int tick, int measure);
+        MidiExtEntry *GetTimeEntry(int tick);
 
-    void CopyMeasures(int fromTick, int endTick, int addTick);
+        void AddMeasure(int tick, Measure *measure);
 
-    void CopyTimeEntry(int fromTick, int endTick, int addTick);
+        void CopyMeasures(int fromTick, int endTick, int addTick);
 
-    const std::map<int, int>& GetMeasures() const;
+        void CopyTimeEntry(int fromTick, int endTick, int addTick);
 
-    const std::map<int, MidiExtEntry>& GetEntries() const;
+        const std::map<int, int> &GetMeasures() const;
 
-private:
-    //
-public:
-    //
-private:
-    /** The map with time values as keys */
-    std::map<int, MidiExtEntry> m_map;
-    std::map<int, int> m_measureTicks;
+        const std::map<int, MidiExtEntry> &GetEntries() const;
 
-}; // class Timemap
+        const std::map<std::string, int> &GetSystems() const;
+
+    private:
+        //
+    public:
+        //
+    private:
+        /** The map with time values as keys */
+        std::map<int, MidiExtEntry> m_entries;
+        std::map<int, int> m_measureTicks;
+        std::map<std::string, int> m_systemUuid;
+    }; // class Timemap
 
 } // namespace vrv
 

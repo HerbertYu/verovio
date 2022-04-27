@@ -1602,7 +1602,7 @@ int Measure::GenerateMIDI(FunctorParams *functorParams)
     params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalTime;
 
     if (params->m_midiExt) {
-        params->m_midiExt->AddMeasure(params->m_totalTime * params->m_midiFile->getTPQ(), std::stoi(this->GetN()) - 1);
+        params->m_midiExt->AddMeasure(params->m_totalTime * params->m_midiFile->getTPQ(), this);
     }
 
     if (m_currentTempo != params->m_currentTempo) {
