@@ -157,6 +157,7 @@ void Measure::Reset()
     m_scoreTimeOffset.clear();
     m_realTimeOffsetMilliseconds.clear();
     m_currentTempo = MIDI_TEMPO;
+    m_duration = 0;
 }
 
 bool Measure::IsSupportedChild(Object *child)
@@ -1602,7 +1603,11 @@ int Measure::GenerateMIDI(FunctorParams *functorParams)
     params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalTime;
 
     if (params->m_midiExt) {
-        params->m_midiExt->AddMeasure(params->m_totalTime * params->m_midiFile->getTPQ(), this);
+        params->m_midiExt->AddMeasure(
+                params->m_totalTime * params->m_midiFile->getTPQ(),
+                m_duration * params->m_midiFile->getTPQ(),
+                this
+        );
     }
 
     if (m_currentTempo != params->m_currentTempo) {
@@ -1624,9 +1629,7 @@ int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
 
     if (GetRight() == BARRENDITION_rptend || GetRight() == BARRENDITION_rptboth) {
 
-        const double scoreTimeIncrement
-                = m_measureAligner.GetRightAlignment()->GetTime() * /* params->m_multiRestFactor * */ DURATION_4 / DUR_MAX;
-        double endtime = params->m_totalTime + scoreTimeIncrement;
+        double endtime = params->m_totalTime + m_duration;
         // Sameas not taken into account for now
         double starttime = params->m_repeatStartTime;
         auto repeatAdditionalTime = endtime - starttime;
@@ -1698,6 +1701,7 @@ int Measure::InitMaxMeasureDurationEnd(FunctorParams *functorParams)
 
     const double scoreTimeIncrement
         = m_measureAligner.GetRightAlignment()->GetTime() * params->m_multiRestFactor * DURATION_4 / DUR_MAX;
+    m_duration = scoreTimeIncrement;
     m_currentTempo = params->m_currentTempo * params->m_tempoAdjustment;
     params->m_currentScoreTime += scoreTimeIncrement;
     params->m_currentRealTimeSeconds += scoreTimeIncrement * 60.0 / m_currentTempo;

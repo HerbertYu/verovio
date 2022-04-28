@@ -580,6 +580,7 @@ private:
     std::vector<double> m_scoreTimeOffset;
     std::vector<double> m_realTimeOffsetMilliseconds;
     double m_currentTempo;
+    double m_duration;
 
     std::map<int, BarlineRenditionPair> m_invisibleStaffBarlines;
 };

@@ -117,8 +117,8 @@ namespace vrv {
         return iter != m_entries.end() ? &iter->second : nullptr;
     }
 
-    void MidiExt::AddMeasure(int tick, Measure *measure) {
-        m_measureTicks[tick] = std::stoi(measure->GetN()) - 1;
+    void MidiExt::AddMeasure(int tick, int duration, Measure *measure) {
+        m_measureTicks[tick] = MidiExtMeasure{ std::stoi(measure->GetN()) - 1, duration };
         auto system = dynamic_cast<System *>(measure->GetFirstAncestor(SYSTEM));
         if (system) {
             auto uuid = system->GetUuid();
@@ -146,7 +146,7 @@ namespace vrv {
         }
     }
 
-    const std::map<int, int> &MidiExt::GetMeasures() const {
+    const std::map<int, MidiExtMeasure> &MidiExt::GetMeasures() const {
         return m_measureTicks;
     }
 

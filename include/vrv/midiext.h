@@ -38,6 +38,11 @@ namespace vrv {
         int pageNo;
     };
 
+    struct MidiExtMeasure {
+        int measureNo;
+        int duration;
+    };
+
 //----------------------------------------------------------------------------
 // Timemap
 //----------------------------------------------------------------------------
@@ -63,13 +68,13 @@ namespace vrv {
 
         MidiExtEntry *GetTimeEntry(int tick);
 
-        void AddMeasure(int tick, Measure *measure);
+        void AddMeasure(int tick, int duration, Measure *measure);
 
         void CopyMeasures(int fromTick, int endTick, int addTick);
 
         void CopyTimeEntry(int fromTick, int endTick, int addTick);
 
-        const std::map<int, int> &GetMeasures() const;
+        const std::map<int, MidiExtMeasure> &GetMeasures() const;
 
         const std::map<int, MidiExtEntry> &GetEntries() const;
 
@@ -82,7 +87,7 @@ namespace vrv {
     private:
         /** The map with time values as keys */
         std::map<int, MidiExtEntry> m_entries;
-        std::map<int, int> m_measureTicks;
+        std::map<int, MidiExtMeasure> m_measureTicks;
         std::map<std::string, int> m_systemUuid;
     }; // class Timemap
 
