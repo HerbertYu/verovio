@@ -118,13 +118,17 @@ namespace vrv {
     }
 
     void MidiExt::AddMeasure(int tick, int duration, Measure *measure) {
-        m_measureTicks[tick] = MidiExtMeasure{ std::stoi(measure->GetN()) - 1, duration };
         auto system = dynamic_cast<System *>(measure->GetFirstAncestor(SYSTEM));
         if (system) {
             auto uuid = system->GetUuid();
             if (m_systemUuid.count(uuid) == 0) {
                 m_systemUuid[uuid] = m_systemUuid.size();
             }
+            m_measureTicks[tick] = MidiExtMeasure{
+                    std::stoi(measure->GetN()) - 1,
+                    duration,
+                    m_systemUuid[uuid]
+            };
         }
     }
 
@@ -137,9 +141,10 @@ namespace vrv {
     }
 
     void MidiExt::CopyTimeEntry(int fromTick, int endTick, int addTick) {
-        auto iter = std::find_if(m_entries.begin(), m_entries.end(), [fromTick](const std::pair<int, MidiExtEntry> &entry) {
-            return entry.first >= fromTick;
-        });
+        auto iter = std::find_if(m_entries.begin(), m_entries.end(),
+                                 [fromTick](const std::pair<int, MidiExtEntry> &entry) {
+                                     return entry.first >= fromTick;
+                                 });
         while (iter != m_entries.end() && iter->first < endTick) {
             m_entries[iter->first + addTick] = iter->second;
             iter++;

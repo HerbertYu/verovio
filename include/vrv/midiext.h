@@ -41,6 +41,7 @@ namespace vrv {
     struct MidiExtMeasure {
         int measureNo;
         int duration;
+        int systemNo;
     };
 
 //----------------------------------------------------------------------------
