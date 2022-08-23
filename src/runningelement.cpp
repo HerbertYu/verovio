@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
@@ -91,42 +91,24 @@ bool RunningElement::IsSupportedChild(Object *child)
     return true;
 }
 
-void RunningElement::FilterList(ArrayOfObjects *childList)
+void RunningElement::FilterList(ListOfConstObjects &childList) const
 {
-    ArrayOfObjects::iterator iter = childList->begin();
+    ListOfConstObjects::iterator iter = childList.begin();
 
-    while (iter != childList->end()) {
+    while (iter != childList.end()) {
         // remove nested rend elements
         if ((*iter)->Is(REND)) {
             if ((*iter)->GetFirstAncestor(REND)) {
-                iter = childList->erase(iter);
+                iter = childList.erase(iter);
                 continue;
             }
         }
         // Also remove anything that is not a fig
         else if (!(*iter)->Is(FIG)) {
-            iter = childList->erase(iter);
+            iter = childList.erase(iter);
             continue;
         }
         ++iter;
-    }
-
-    int i;
-    for (i = 0; i < 9; ++i) {
-        m_cells[i].clear();
-    }
-    for (i = 0; i < 3; ++i) {
-        m_drawingScalingPercent[i] = 100;
-    }
-
-    for (iter = childList->begin(); iter != childList->end(); ++iter) {
-        int pos = 0;
-        AreaPosInterface *interface = dynamic_cast<AreaPosInterface *>(*iter);
-        assert(interface);
-        pos = this->GetAlignmentPos(interface->GetHalign(), interface->GetValign());
-        TextElement *text = vrv_cast<TextElement *>(*iter);
-        assert(text);
-        m_cells[pos].push_back(text);
     }
 }
 
@@ -316,7 +298,7 @@ bool RunningElement::AdjustRunningElementYPos()
     return true;
 }
 
-int RunningElement::GetAlignmentPos(data_HORIZONTALALIGNMENT h, data_VERTICALALIGNMENT v)
+int RunningElement::GetAlignmentPos(data_HORIZONTALALIGNMENT h, data_VERTICALALIGNMENT v) const
 {
     int pos = 0;
     switch (h) {
@@ -334,7 +316,7 @@ int RunningElement::GetAlignmentPos(data_HORIZONTALALIGNMENT h, data_VERTICALALI
     return pos;
 }
 
-void RunningElement::SetCurrentPageNum(Page *currentPage)
+void RunningElement::SetCurrentPageNum(const Page *currentPage)
 {
     assert(currentPage);
 
@@ -396,20 +378,48 @@ void RunningElement::AddPageNum(data_HORIZONTALALIGNMENT halign, data_VERTICALAL
 // Functor methods
 //----------------------------------------------------------------------------
 
+int RunningElement::PrepareDataInitialization(FunctorParams *)
+{
+    int i;
+    for (i = 0; i < 9; ++i) {
+        m_cells[i].clear();
+    }
+    for (i = 0; i < 3; ++i) {
+        m_drawingScalingPercent[i] = 100;
+    }
+
+    const ListOfObjects &childList = this->GetList(this);
+    for (ListOfObjects::const_iterator iter = childList.begin(); iter != childList.end(); ++iter) {
+        int pos = 0;
+        AreaPosInterface *interface = dynamic_cast<AreaPosInterface *>(*iter);
+        assert(interface);
+        pos = this->GetAlignmentPos(interface->GetHalign(), interface->GetValign());
+        TextElement *text = vrv_cast<TextElement *>(*iter);
+        assert(text);
+        m_cells[pos].push_back(text);
+    }
+
+    return FUNCTOR_CONTINUE;
+}
+
 int RunningElement::Save(FunctorParams *functorParams)
 {
-    if (this->IsGenerated())
+    if (this->IsGenerated()) {
         return FUNCTOR_SIBLINGS;
-    else
+    }
+    else {
         return Object::Save(functorParams);
+    }
 }
 
 int RunningElement::SaveEnd(FunctorParams *functorParams)
 {
-    if (this->IsGenerated())
+    if (this->IsGenerated()) {
         return FUNCTOR_SIBLINGS;
-    else
+    }
+    else {
         return Object::SaveEnd(functorParams);
+    }
 }
 
 int RunningElement::AlignVertically(FunctorParams *functorParams)

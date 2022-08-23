@@ -124,9 +124,9 @@
             <glyph glyph-code="E077" smufl-name="fClefTurned" />
             <!--<glyph glyph-code="E078" smufl-name="bridgeClef" />-->
             <!--<glyph glyph-code="E079" smufl-name="accdnDiatonicClef" />-->
-            <!--<glyph glyph-code="E07A" smufl-name="gClefChange" />-->
-            <!--<glyph glyph-code="E07B" smufl-name="cClefChange" />-->
-            <!--<glyph glyph-code="E07C" smufl-name="fClefChange" />-->
+            <glyph glyph-code="E07A" smufl-name="gClefChange" />
+            <glyph glyph-code="E07B" smufl-name="cClefChange" />
+            <glyph glyph-code="E07C" smufl-name="fClefChange" />
             <!--<glyph glyph-code="E07D" smufl-name="clef8" />-->
             <!--<glyph glyph-code="E07E" smufl-name="clef15" />-->
             <!--<glyph glyph-code="E07F" smufl-name="clefChangeCombining" />-->
@@ -575,10 +575,10 @@
             <!--<glyph glyph-code="E22B" smufl-name="pendereckiTremolo" />-->
             <!--<glyph glyph-code="E22C" smufl-name="unmeasuredTremolo" />-->
             <!--<glyph glyph-code="E22D" smufl-name="unmeasuredTremoloSimple" />-->
-            <!--<glyph glyph-code="E22E" smufl-name="tremoloDivisiDots2" />-->
-            <!--<glyph glyph-code="E22F" smufl-name="tremoloDivisiDots3" />-->
-            <!--<glyph glyph-code="E230" smufl-name="tremoloDivisiDots4" />-->
-            <!--<glyph glyph-code="E231" smufl-name="tremoloDivisiDots6" />-->
+            <glyph glyph-code="E22E" smufl-name="tremoloDivisiDots2" />
+            <glyph glyph-code="E22F" smufl-name="tremoloDivisiDots3" />
+            <glyph glyph-code="E230" smufl-name="tremoloDivisiDots4" />
+            <glyph glyph-code="E231" smufl-name="tremoloDivisiDots6" />
             <!--<glyph glyph-code="E232" smufl-name="stockhausenTremolo" />-->
             <!--<glyph glyph-code="E233" smufl-name="oneHandedRollStevens" />-->
             <!--<glyph glyph-code="E234" smufl-name="doubleLateralRollStevens" />-->
@@ -1170,13 +1170,13 @@
             <glyph glyph-code="E4CE" smufl-name="breathMarkComma" />
             <!--<glyph glyph-code="E4CF" smufl-name="breathMarkTick" />-->
             <!--<glyph glyph-code="E4D0" smufl-name="breathMarkUpbow" />-->
-            <!--<glyph glyph-code="E4D1" smufl-name="caesura" />-->
-            <!--<glyph glyph-code="E4D2" smufl-name="caesuraThick" />-->
-            <!--<glyph glyph-code="E4D3" smufl-name="caesuraShort" />-->
-            <!--<glyph glyph-code="E4D4" smufl-name="caesuraCurved" />-->
+            <glyph glyph-code="E4D1" smufl-name="caesura" />
+            <glyph glyph-code="E4D2" smufl-name="caesuraThick" />
+            <glyph glyph-code="E4D3" smufl-name="caesuraShort" />
+            <glyph glyph-code="E4D4" smufl-name="caesuraCurved" />
             <!--<glyph glyph-code="E4D5" smufl-name="breathMarkSalzedo" />-->
             <!--<glyph glyph-code="E4D6" smufl-name="curlewSign" />-->
-            <!--<glyph glyph-code="E4D7" smufl-name="caesuraSingleStroke" />-->
+            -<glyph glyph-code="E4D7" smufl-name="caesuraSingleStroke" />
             <range_end>U+E4DF</range_end>
             <range_start>U+E4C0</range_start>
         </holdsAndPauses>
@@ -1770,22 +1770,22 @@
         </miscellaneousPercussionInstrumentPictograms>
         <beatersPictograms>
             <description>Beaters pictograms</description>
-            <!--<glyph glyph-code="E770" smufl-name="pictBeaterSoftXylophoneUp" />-->
-            <!--<glyph glyph-code="E771" smufl-name="pictBeaterSoftXylophoneDown" />-->
-            <!--<glyph glyph-code="E772" smufl-name="pictBeaterSoftXylophoneRight" />-->
-            <!--<glyph glyph-code="E773" smufl-name="pictBeaterSoftXylophoneLeft" />-->
-            <!--<glyph glyph-code="E774" smufl-name="pictBeaterMediumXylophoneUp" />-->
-            <!--<glyph glyph-code="E775" smufl-name="pictBeaterMediumXylophoneDown" />-->
-            <!--<glyph glyph-code="E776" smufl-name="pictBeaterMediumXylophoneRight" />-->
-            <!--<glyph glyph-code="E777" smufl-name="pictBeaterMediumXylophoneLeft" />-->
-            <!--<glyph glyph-code="E778" smufl-name="pictBeaterHardXylophoneUp" />-->
-            <!--<glyph glyph-code="E779" smufl-name="pictBeaterHardXylophoneDown" />-->
-            <!--<glyph glyph-code="E77A" smufl-name="pictBeaterHardXylophoneRight" />-->
-            <!--<glyph glyph-code="E77B" smufl-name="pictBeaterHardXylophoneLeft" />-->
-            <!--<glyph glyph-code="E77C" smufl-name="pictBeaterWoodXylophoneUp" />-->
-            <!--<glyph glyph-code="E77D" smufl-name="pictBeaterWoodXylophoneDown" />-->
-            <!--<glyph glyph-code="E77E" smufl-name="pictBeaterWoodXylophoneRight" />-->
-            <!--<glyph glyph-code="E77F" smufl-name="pictBeaterWoodXylophoneLeft" />-->
+            <glyph glyph-code="E770" smufl-name="pictBeaterSoftXylophoneUp" />
+            <glyph glyph-code="E771" smufl-name="pictBeaterSoftXylophoneDown" />
+            <glyph glyph-code="E772" smufl-name="pictBeaterSoftXylophoneRight" />
+            <glyph glyph-code="E773" smufl-name="pictBeaterSoftXylophoneLeft" />
+            <glyph glyph-code="E774" smufl-name="pictBeaterMediumXylophoneUp" />
+            <glyph glyph-code="E775" smufl-name="pictBeaterMediumXylophoneDown" />
+            <glyph glyph-code="E776" smufl-name="pictBeaterMediumXylophoneRight" />
+            <glyph glyph-code="E777" smufl-name="pictBeaterMediumXylophoneLeft" />
+            <glyph glyph-code="E778" smufl-name="pictBeaterHardXylophoneUp" />
+            <glyph glyph-code="E779" smufl-name="pictBeaterHardXylophoneDown" />
+            <glyph glyph-code="E77A" smufl-name="pictBeaterHardXylophoneRight" />
+            <glyph glyph-code="E77B" smufl-name="pictBeaterHardXylophoneLeft" />
+            <glyph glyph-code="E77C" smufl-name="pictBeaterWoodXylophoneUp" />
+            <glyph glyph-code="E77D" smufl-name="pictBeaterWoodXylophoneDown" />
+            <glyph glyph-code="E77E" smufl-name="pictBeaterWoodXylophoneRight" />
+            <glyph glyph-code="E77F" smufl-name="pictBeaterWoodXylophoneLeft" />
             <!--<glyph glyph-code="E780" smufl-name="pictBeaterSoftGlockenspielUp" />-->
             <!--<glyph glyph-code="E781" smufl-name="pictBeaterSoftGlockenspielDown" />-->
             <!--<glyph glyph-code="E782" smufl-name="pictBeaterSoftGlockenspielRight" />-->
@@ -1867,8 +1867,8 @@
             <!--<glyph glyph-code="E7CE" smufl-name="pictBeaterHammerPlasticDown" />-->
             <!--<glyph glyph-code="E7CF" smufl-name="pictBeaterHammerMetalUp" />-->
             <!--<glyph glyph-code="E7D0" smufl-name="pictBeaterHammerMetalDown" />-->
-            <!--<glyph glyph-code="E7D1" smufl-name="pictBeaterSnareSticksUp" />-->
-            <!--<glyph glyph-code="E7D2" smufl-name="pictBeaterSnareSticksDown" />-->
+            <glyph glyph-code="E7D1" smufl-name="pictBeaterSnareSticksUp" />
+            <glyph glyph-code="E7D2" smufl-name="pictBeaterSnareSticksDown" />
             <!--<glyph glyph-code="E7D3" smufl-name="pictBeaterJazzSticksUp" />-->
             <!--<glyph glyph-code="E7D4" smufl-name="pictBeaterJazzSticksDown" />-->
             <!--<glyph glyph-code="E7D5" smufl-name="pictBeaterTriangleUp" />-->
@@ -1885,9 +1885,9 @@
             <!--<glyph glyph-code="E7E0" smufl-name="pictBeaterMetalHammer" />-->
             <!--<glyph glyph-code="E7E1" smufl-name="pictBeaterHammer" />-->
             <!--<glyph glyph-code="E7E2" smufl-name="pictBeaterKnittingNeedle" />-->
-            <!--<glyph glyph-code="E7E3" smufl-name="pictBeaterHand" />-->
-            <!--<glyph glyph-code="E7E4" smufl-name="pictBeaterFinger" />-->
-            <!--<glyph glyph-code="E7E5" smufl-name="pictBeaterFist" />-->
+            <glyph glyph-code="E7E3" smufl-name="pictBeaterHand" />
+            <glyph glyph-code="E7E4" smufl-name="pictBeaterFinger" />
+            <glyph glyph-code="E7E5" smufl-name="pictBeaterFist" />
             <!--<glyph glyph-code="E7E6" smufl-name="pictBeaterFingernails" />-->
             <!--<glyph glyph-code="E7E7" smufl-name="pictCoins" />-->
             <!--<glyph glyph-code="E7E8" smufl-name="pictDrumStick" />-->
@@ -2158,9 +2158,9 @@
             <!--<glyph glyph-code="E900" smufl-name="mensuralGclef" />-->
             <glyph glyph-code="E901" smufl-name="mensuralGclefPetrucci" />
             <glyph glyph-code="E902" smufl-name="chantFclef" />
-            <!--<glyph glyph-code="E903" smufl-name="mensuralFclef" />-->
+            <glyph glyph-code="E903" smufl-name="mensuralFclef" />
             <glyph glyph-code="E904" smufl-name="mensuralFclefPetrucci" />
-            <!--<glyph glyph-code="E905" smufl-name="mensuralCclef" />-->
+            <glyph glyph-code="E905" smufl-name="mensuralCclef" />
             <glyph glyph-code="E906" smufl-name="chantCclef" />
             <glyph glyph-code="E907" smufl-name="mensuralCclefPetrucciPosLowest" />
             <glyph glyph-code="E908" smufl-name="mensuralCclefPetrucciPosLow" />
@@ -2654,13 +2654,13 @@
             <!--<glyph glyph-code="EB19" smufl-name="elecProjector" />-->
             <!--<glyph glyph-code="EB1A" smufl-name="elecLoudspeaker" />-->
             <!--<glyph glyph-code="EB1B" smufl-name="elecCamera" />-->
-            <!--<glyph glyph-code="EB1C" smufl-name="elecPlay" />-->
-            <!--<glyph glyph-code="EB1D" smufl-name="elecStop" />-->
-            <!--<glyph glyph-code="EB1E" smufl-name="elecPause" />-->
-            <!--<glyph glyph-code="EB1F" smufl-name="elecFastForward" />-->
-            <!--<glyph glyph-code="EB20" smufl-name="elecRewind" />-->
-            <!--<glyph glyph-code="EB21" smufl-name="elecSkipForwards" />-->
-            <!--<glyph glyph-code="EB22" smufl-name="elecSkipBackwards" />-->
+            <glyph glyph-code="EB1C" smufl-name="elecPlay" />
+            <glyph glyph-code="EB1D" smufl-name="elecStop" />
+            <glyph glyph-code="EB1E" smufl-name="elecPause" />
+            <glyph glyph-code="EB1F" smufl-name="elecFastForward" />
+            <glyph glyph-code="EB20" smufl-name="elecRewind" />
+            <glyph glyph-code="EB21" smufl-name="elecSkipForwards" />
+            <glyph glyph-code="EB22" smufl-name="elecSkipBackwards" />
             <!--<glyph glyph-code="EB23" smufl-name="elecLoop" />-->
             <!--<glyph glyph-code="EB24" smufl-name="elecReplay" />-->
             <!--<glyph glyph-code="EB25" smufl-name="elecShuffle" />-->
@@ -2960,13 +2960,13 @@
         </miscellaneousSymbols>
         <timeSignaturesSupplement>
             <description>Time signatures supplement</description>
-            <!--<glyph glyph-code="EC80" smufl-name="timeSigBracketLeft" />-->
-            <!--<glyph glyph-code="EC81" smufl-name="timeSigBracketRight" />-->
-            <!--<glyph glyph-code="EC82" smufl-name="timeSigBracketLeftSmall" />-->
-            <!--<glyph glyph-code="EC83" smufl-name="timeSigBracketRightSmall" />-->
-            <!--<glyph glyph-code="EC84" smufl-name="timeSigSlash" />-->
-            <!--<glyph glyph-code="EC85" smufl-name="timeSigCut2" />-->
-            <!--<glyph glyph-code="EC86" smufl-name="timeSigCut3" />-->
+            <glyph glyph-code="EC80" smufl-name="timeSigBracketLeft" />
+            <glyph glyph-code="EC81" smufl-name="timeSigBracketRight" />
+            <glyph glyph-code="EC82" smufl-name="timeSigBracketLeftSmall" />
+            <glyph glyph-code="EC83" smufl-name="timeSigBracketRightSmall" />
+            <glyph glyph-code="EC84" smufl-name="timeSigSlash" />
+            <glyph glyph-code="EC85" smufl-name="timeSigCut2" />
+            <glyph glyph-code="EC86" smufl-name="timeSigCut3" />
             <range_end>U+EC8F</range_end>
             <range_start>U+EC80</range_start>
         </timeSignaturesSupplement>

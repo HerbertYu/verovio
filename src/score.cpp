@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
@@ -23,7 +23,6 @@
 #include "pb.h"
 #include "runningelement.h"
 #include "sb.h"
-#include "scoredef.h"
 #include "section.h"
 #include "system.h"
 #include "vrv.h"
@@ -154,6 +153,17 @@ bool Score::ScoreDefNeedsOptimization(int optionCondense) const
 // Functor methods
 //----------------------------------------------------------------------------
 
+int Score::PrepareDataInitialization(FunctorParams *functorParams)
+{
+    PrepareDataInitializationParams *params = vrv_params_cast<PrepareDataInitializationParams *>(functorParams);
+    assert(params);
+
+    // Evaluate functor on scoreDef
+    this->GetScoreDef()->Process(params->m_functor, params);
+
+    return FUNCTOR_CONTINUE;
+}
+
 int Score::AdjustDots(FunctorParams *functorParams)
 {
     AdjustDotsParams *params = vrv_params_cast<AdjustDotsParams *>(functorParams);
@@ -190,6 +200,17 @@ int Score::AdjustGraceXPos(FunctorParams *functorParams)
     assert(params);
 
     params->m_staffNs = params->m_doc->GetCurrentScoreDef()->GetStaffNs();
+
+    return FUNCTOR_CONTINUE;
+}
+
+int Score::ConvertMarkupScoreDef(FunctorParams *functorParams)
+{
+    ConvertMarkupScoreDefParams *params = vrv_params_cast<ConvertMarkupScoreDefParams *>(functorParams);
+    assert(params);
+
+    // Evaluate functor on scoreDef
+    this->GetScoreDef()->Process(params->m_functor, params, params->m_functorEnd);
 
     return FUNCTOR_CONTINUE;
 }
@@ -281,16 +302,23 @@ int Score::Transpose(FunctorParams *functorParams)
     TransposeParams *params = vrv_params_cast<TransposeParams *>(functorParams);
     assert(params);
 
-    // Check whether we are in the selected mdiv
-    if (!params->m_selectedMdivUuid.empty()
-        && (std::find(params->m_currentMdivUuids.begin(), params->m_currentMdivUuids.end(), params->m_selectedMdivUuid)
-            == params->m_currentMdivUuids.end())) {
-        return FUNCTOR_CONTINUE;
-    }
-
     ScoreDef *scoreDef = this->GetScoreDef();
     Transposer *transposer = params->m_transposer;
     const std::string &transposition = params->m_transposition;
+
+    // Check whether we transpose to sounding pitch
+    if (params->m_transposeToSoundingPitch) {
+        // Evaluate functor on scoreDef
+        scoreDef->Process(params->m_functor, params, params->m_functorEnd);
+        return FUNCTOR_CONTINUE;
+    }
+
+    // Check whether we are in the selected mdiv
+    if (!params->m_selectedMdivID.empty()
+        && (std::find(params->m_currentMdivIDs.begin(), params->m_currentMdivIDs.end(), params->m_selectedMdivID)
+            == params->m_currentMdivIDs.end())) {
+        return FUNCTOR_CONTINUE;
+    }
 
     if (transposer->IsValidIntervalName(transposition)) {
         transposer->SetTransposition(transposition);
@@ -299,15 +327,15 @@ int Score::Transpose(FunctorParams *functorParams)
         // Find the starting key tonic of the data to use in calculating the tranposition interval:
         // Set transposition by key tonic.
         // Detect the current key from the keysignature.
-        KeySig *keysig = vrv_cast<KeySig *>(scoreDef->FindDescendantByType(KEYSIG));
+        KeySig *keySig = vrv_cast<KeySig *>(scoreDef->FindDescendantByType(KEYSIG));
         // If there is no keysignature, assume it is C.
         TransPitch currentKey = TransPitch(0, 0, 0);
-        if (keysig && keysig->HasPname()) {
-            currentKey = TransPitch(keysig->GetPname(), ACCIDENTAL_GESTURAL_NONE, keysig->GetAccid(), 0);
+        if (keySig && keySig->HasPname()) {
+            currentKey = TransPitch(keySig->GetPname(), ACCIDENTAL_GESTURAL_NONE, keySig->GetAccid(), 0);
         }
-        else if (keysig) {
+        else if (keySig) {
             // No tonic pitch in key signature, so infer from key signature.
-            int fifthsInt = keysig->GetFifthsInt();
+            int fifthsInt = keySig->GetFifthsInt();
             // Check the keySig@mode is present (currently assuming major):
             currentKey = transposer->CircleOfFifthsToMajorTonic(fifthsInt);
             // need to add a dummy "0" key signature in score (staffDefs of staffDef).
@@ -315,10 +343,10 @@ int Score::Transpose(FunctorParams *functorParams)
         transposer->SetTransposition(currentKey, transposition);
     }
     else if (transposer->IsValidSemitones(transposition)) {
-        KeySig *keysig = vrv_cast<KeySig *>(scoreDef->FindDescendantByType(KEYSIG));
+        KeySig *keySig = vrv_cast<KeySig *>(scoreDef->FindDescendantByType(KEYSIG));
         int fifths = 0;
-        if (keysig) {
-            fifths = keysig->GetFifthsInt();
+        if (keySig) {
+            fifths = keySig->GetFifthsInt();
         }
         else {
             LogWarning("No key signature in data, assuming no key signature with no sharps/flats.");
@@ -336,7 +364,7 @@ int Score::Transpose(FunctorParams *functorParams)
     }
 
     // Evaluate functor on scoreDef
-    scoreDef->Process(params->m_functor, params);
+    scoreDef->Process(params->m_functor, params, params->m_functorEnd);
 
     return FUNCTOR_CONTINUE;
 }

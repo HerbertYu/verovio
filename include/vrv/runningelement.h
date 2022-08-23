@@ -76,6 +76,7 @@ public:
     ///@{
     void SetDrawingPage(Page *page);
     Page *GetDrawingPage() { return m_drawingPage; }
+    const Page *GetDrawingPage() const { return m_drawingPage; }
     ///@}
 
     /**
@@ -117,7 +118,7 @@ public:
     /**
      * Set the current page number by looking for a <num label="page">#</num> element.
      */
-    void SetCurrentPageNum(Page *currentPage);
+    void SetCurrentPageNum(const Page *currentPage);
 
     /**
      * Load the footer from the resources (footer.svg)
@@ -132,6 +133,11 @@ public:
     //----------//
     // Functors //
     //----------//
+
+    /**
+     * See Object::PrepareDataInitialization
+     */
+    int PrepareDataInitialization(FunctorParams *) override;
 
     /**
      * See Object::Save
@@ -153,13 +159,13 @@ protected:
      * Filter the list for a specific class.
      * Keep only the top <rend> and <fig>
      */
-    void FilterList(ArrayOfObjects *childList) override;
+    void FilterList(ListOfConstObjects &childList) const override;
 
 private:
     /**
      *
      */
-    int GetAlignmentPos(data_HORIZONTALALIGNMENT h, data_VERTICALALIGNMENT v);
+    int GetAlignmentPos(data_HORIZONTALALIGNMENT h, data_VERTICALALIGNMENT v) const;
 
 public:
     //

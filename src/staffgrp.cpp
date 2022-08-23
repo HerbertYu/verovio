@@ -9,13 +9,13 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
+#include "comparison.h"
 #include "editorial.h"
 #include "functorparams.h"
-#include "grpsym.h"
 #include "instrdef.h"
 #include "label.h"
 #include "labelabbr.h"
@@ -32,6 +32,7 @@ static const ClassRegistrar<StaffGrp> s_factory("staffGrp", STAFFGRP);
 StaffGrp::StaffGrp()
     : Object(STAFFGRP, "staffgrp-")
     , ObjectListInterface()
+    , AttBarring()
     , AttBasic()
     , AttLabelled()
     , AttNNumberLike()
@@ -39,6 +40,7 @@ StaffGrp::StaffGrp()
     , AttStaffGrpVis()
     , AttTyped()
 {
+    this->RegisterAttClass(ATT_BARRING);
     this->RegisterAttClass(ATT_BASIC);
     this->RegisterAttClass(ATT_LABELLED);
     this->RegisterAttClass(ATT_NNUMBERLIKE);
@@ -54,6 +56,7 @@ StaffGrp::~StaffGrp() {}
 void StaffGrp::Reset()
 {
     Object::Reset();
+    this->ResetBarring();
     this->ResetBasic();
     this->ResetLabelled();
     this->ResetNNumberLike();
@@ -94,14 +97,14 @@ bool StaffGrp::IsSupportedChild(Object *child)
     return true;
 }
 
-void StaffGrp::FilterList(ArrayOfObjects *childList)
+void StaffGrp::FilterList(ListOfConstObjects &childList) const
 {
     // We want to keep only staffDef
-    ArrayOfObjects::iterator iter = childList->begin();
+    ListOfConstObjects::iterator iter = childList.begin();
 
-    while (iter != childList->end()) {
+    while (iter != childList.end()) {
         if (!(*iter)->Is(STAFFDEF)) {
-            iter = childList->erase(iter);
+            iter = childList.erase(iter);
         }
         else {
             ++iter;
@@ -109,18 +112,17 @@ void StaffGrp::FilterList(ArrayOfObjects *childList)
     }
 }
 
-int StaffGrp::GetMaxStaffSize()
+int StaffGrp::GetMaxStaffSize() const
 {
-    this->ResetList(this);
-    const ArrayOfObjects *childList = this->GetList(this);
+    const ListOfConstObjects &childList = this->GetList(this);
 
-    if (childList->empty()) return 100;
+    if (childList.empty()) return 100;
 
     int max = 0;
 
-    StaffDef *staffDef = NULL;
-    for (auto &child : *childList) {
-        staffDef = vrv_cast<StaffDef *>(child);
+    const StaffDef *staffDef = NULL;
+    for (auto &child : childList) {
+        staffDef = vrv_cast<const StaffDef *>(child);
         assert(staffDef);
         if (staffDef->HasScale() && staffDef->GetScale() >= max) {
             max = staffDef->GetScale();
@@ -135,15 +137,21 @@ int StaffGrp::GetMaxStaffSize()
 
 std::pair<StaffDef *, StaffDef *> StaffGrp::GetFirstLastStaffDef()
 {
-    const ArrayOfObjects *staffDefs = this->GetList(this);
-    if (staffDefs->empty()) {
+    const auto [firstDef, lastDef] = std::as_const(*this).GetFirstLastStaffDef();
+    return { const_cast<StaffDef *>(firstDef), const_cast<StaffDef *>(lastDef) };
+}
+
+std::pair<const StaffDef *, const StaffDef *> StaffGrp::GetFirstLastStaffDef() const
+{
+    const ListOfConstObjects &staffDefs = this->GetList(this);
+    if (staffDefs.empty()) {
         return { NULL, NULL };
     }
 
-    StaffDef *firstDef = NULL;
-    ArrayOfObjects::const_iterator iter;
-    for (iter = staffDefs->begin(); iter != staffDefs->end(); ++iter) {
-        StaffDef *staffDef = vrv_cast<StaffDef *>(*iter);
+    const StaffDef *firstDef = NULL;
+    ListOfConstObjects::const_iterator iter;
+    for (iter = staffDefs.begin(); iter != staffDefs.end(); ++iter) {
+        const StaffDef *staffDef = vrv_cast<const StaffDef *>(*iter);
         assert(staffDef);
         if (staffDef->GetDrawingVisibility() != OPTIMIZATION_HIDDEN) {
             firstDef = staffDef;
@@ -151,10 +159,10 @@ std::pair<StaffDef *, StaffDef *> StaffGrp::GetFirstLastStaffDef()
         }
     }
 
-    StaffDef *lastDef = NULL;
-    ArrayOfObjects::const_reverse_iterator riter;
-    for (riter = staffDefs->rbegin(); riter != staffDefs->rend(); ++riter) {
-        StaffDef *staffDef = vrv_cast<StaffDef *>(*riter);
+    const StaffDef *lastDef = NULL;
+    ListOfConstObjects::const_reverse_iterator riter;
+    for (riter = staffDefs.rbegin(); riter != staffDefs.rend(); ++riter) {
+        const StaffDef *staffDef = vrv_cast<const StaffDef *>(*riter);
         assert(staffDef);
         if (staffDef->GetDrawingVisibility() != OPTIMIZATION_HIDDEN) {
             lastDef = staffDef;
@@ -226,6 +234,21 @@ LabelAbbr *StaffGrp::GetLabelAbbrCopy() const
     return clone;
 }
 
+void StaffGrp::SetEverythingVisible()
+{
+    this->SetDrawingVisibility(OPTIMIZATION_SHOW);
+    std::for_each(this->GetChildren().begin(), this->GetChildren().end(), [](Object *child) {
+        if (child->Is(STAFFDEF)) {
+            StaffDef *staffDef = vrv_cast<StaffDef *>(child);
+            assert(staffDef);
+            staffDef->SetDrawingVisibility(OPTIMIZATION_SHOW);
+        }
+        else if (child->Is(STAFFGRP)) {
+            vrv_cast<StaffGrp *>(child)->SetEverythingVisible();
+        }
+    });
+}
+
 //----------------------------------------------------------------------------
 // StaffGrp functor methods
 //----------------------------------------------------------------------------
@@ -233,6 +256,17 @@ LabelAbbr *StaffGrp::GetLabelAbbrCopy() const
 int StaffGrp::ScoreDefOptimizeEnd(FunctorParams *)
 {
     this->SetDrawingVisibility(OPTIMIZATION_HIDDEN);
+
+    const Object *instrDef = this->FindDescendantByType(INSTRDEF, 1);
+    if (instrDef) {
+        VisibleStaffDefOrGrpObject visibleStaves;
+        const Object *firstVisible = this->FindDescendantByComparison(&visibleStaves, 1);
+        if (firstVisible) {
+            this->SetEverythingVisible();
+        }
+
+        return FUNCTOR_CONTINUE;
+    }
 
     for (auto child : this->GetChildren()) {
         if (child->Is(STAFFDEF)) {
@@ -249,16 +283,6 @@ int StaffGrp::ScoreDefOptimizeEnd(FunctorParams *)
             if (staffGrp->GetDrawingVisibility() != OPTIMIZATION_HIDDEN) {
                 this->SetDrawingVisibility(OPTIMIZATION_SHOW);
                 break;
-            }
-        }
-    }
-
-    if ((this->GetSymbol() == staffGroupingSym_SYMBOL_brace) && (this->GetDrawingVisibility() != OPTIMIZATION_HIDDEN)) {
-        for (auto child : this->GetChildren()) {
-            if (child->Is(STAFFDEF)) {
-                StaffDef *staffDef = vrv_cast<StaffDef *>(child);
-                assert(staffDef);
-                staffDef->SetDrawingVisibility(OPTIMIZATION_SHOW);
             }
         }
     }

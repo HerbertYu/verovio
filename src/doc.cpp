@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 #include <math.h>
 
 //----------------------------------------------------------------------------
@@ -66,6 +66,7 @@
 
 //----------------------------------------------------------------------------
 
+#include "MidiEvent.h"
 #include "MidiFile.h"
 
 namespace vrv {
@@ -362,19 +363,18 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
     // track 0 (included by default) is reserved for meta messages common to all tracks
     int midiChannel = 0;
     int midiTrack = 1;
-    ArrayOfComparisons filters;
+    Filters filters;
     for (staves = initProcessingListsParams.m_layerTree.child.begin();
          staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
 
+        ScoreDef *currentScoreDef = this->GetCurrentScoreDef();
         int transSemi = 0;
-        if (StaffDef *staffDef = this->GetCurrentScoreDef()->GetStaffDef(staves->first)) {
+        if (StaffDef *staffDef = currentScoreDef->GetStaffDef(staves->first)) {
             // get the transposition (semi-tone) value for the staff
             if (staffDef->HasTransSemi()) transSemi = staffDef->GetTransSemi();
             midiTrack = staffDef->GetN();
-            int trackCount = midiFile->getTrackCount();
-            int addCount = midiTrack + 1 - trackCount;
-            if (addCount > 0) {
-                midiFile->addTracks(addCount);
+            if (midiFile->getTrackCount() < (midiTrack + 1)) {
+                midiFile->addTracks(midiTrack + 1 - midiFile->getTrackCount());
             }
             // set MIDI channel and instrument
             InstrDef *instrdef = dynamic_cast<InstrDef *>(staffDef->FindDescendantByType(INSTRDEF, 1));
@@ -385,35 +385,64 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
             }
             if (instrdef) {
                 if (instrdef->HasMidiChannel()) midiChannel = instrdef->GetMidiChannel();
-                if (instrdef->HasMidiInstrnum())
+                if (instrdef->HasMidiTrack()) {
+                    midiTrack = instrdef->GetMidiTrack();
+                    if (midiFile->getTrackCount() < (midiTrack + 1)) {
+                        midiFile->addTracks(midiTrack + 1 - midiFile->getTrackCount());
+                    }
+                    if (midiTrack > 255) {
+                        LogWarning("A high MIDI track number was assigned to staff %d", staffDef->GetN());
+                    }
+                }
+                if (instrdef->HasMidiInstrnum()) {
                     midiFile->addPatchChange(midiTrack, 0, midiChannel, instrdef->GetMidiInstrnum());
+                }
             }
             // set MIDI track name
-            Label *label = dynamic_cast<Label *>(staffDef->FindDescendantByType(LABEL, 1));
+            Label *label = vrv_cast<Label *>(staffDef->FindDescendantByType(LABEL, 1));
             if (!label) {
                 StaffGrp *staffGrp = vrv_cast<StaffGrp *>(staffDef->GetFirstAncestor(STAFFGRP));
                 assert(staffGrp);
-                label = dynamic_cast<Label *>(staffGrp->FindDescendantByType(LABEL, 1));
+                label = vrv_cast<Label *>(staffGrp->FindDescendantByType(LABEL, 1));
             }
             if (label) {
                 std::string trackName = UTF16to8(label->GetText(label)).c_str();
                 if (!trackName.empty()) midiFile->addTrackName(midiTrack, 0, trackName);
             }
+            // set MIDI key signature
+            KeySig *keySig = vrv_cast<KeySig *>(staffDef->FindDescendantByType(KEYSIG));
+            if (!keySig && (currentScoreDef->HasKeySigInfo())) {
+                keySig = vrv_cast<KeySig *>(currentScoreDef->GetKeySig());
+            }
+            if (keySig && keySig->HasSig()) {
+                midiFile->addKeySignature(midiTrack, 0, keySig->GetFifthsInt(), (keySig->GetMode() == MODE_minor));
+            }
             // set MIDI time signature
-            MeterSig *meterSig = dynamic_cast<MeterSig *>(this->GetCurrentScoreDef()->FindDescendantByType(METERSIG));
+            MeterSig *meterSig = vrv_cast<MeterSig *>(staffDef->FindDescendantByType(METERSIG));
+            if (!meterSig && (currentScoreDef->HasMeterSigInfo())) {
+                meterSig = vrv_cast<MeterSig *>(currentScoreDef->GetMeterSig());
+            }
             if (meterSig && meterSig->HasCount()) {
                 midiFile->addTimeSignature(midiTrack, 0, meterSig->GetTotalCount(), meterSig->GetUnit());
             }
         }
 
+        // Set initial scoreDef values for tuning
+        Functor generateScoreDefMIDI(&Object::GenerateMIDI);
+        Functor generateScoreDefMIDIEnd(&Object::GenerateMIDIEnd);
+        GenerateMIDIParams generateScoreDefMIDIParams(midiFile, &generateScoreDefMIDI);
+        generateScoreDefMIDIParams.m_midiChannel = midiChannel;
+        generateScoreDefMIDIParams.m_midiTrack = midiTrack;
+        currentScoreDef->Process(&generateScoreDefMIDI, &generateScoreDefMIDIParams, &generateScoreDefMIDIEnd);
+
         int index = 0;
         for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers, ++index) {
-            filters.clear();
+            filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
             AttNIntegerComparison matchLayer(LAYER, layers->first);
-            filters.push_back(&matchStaff);
-            filters.push_back(&matchLayer);
+            filters.Add(&matchStaff);
+            filters.Add(&matchLayer);
 
             Functor generateMIDI(&Object::GenerateMIDI);
             Functor generateMIDIEnd(&Object::GenerateMIDIEnd);
@@ -421,9 +450,11 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
             generateMIDIParams.m_midiExt = midiExt;
             generateMIDIParams.m_midiChannel = midiChannel;
             generateMIDIParams.m_midiTrack = midiTrack;
+            generateMIDIParams.m_staffN = staves->first;
             generateMIDIParams.m_transSemi = transSemi;
             generateMIDIParams.m_currentTempo = tempo;
             generateMIDIParams.m_deferredNotes = initMIDIParams.m_deferredNotes;
+            generateMIDIParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
             generateMIDIParams.m_repeatStartTime = 0;
             generateMIDIParams.m_repeatAdditionalTime = 0;
             generateMIDIParams.m_handleRepeat = (index + 1 == (int)staves->second.child.size());
@@ -448,6 +479,7 @@ bool Doc::ExportTimemap(std::string &output, bool includeRests, bool includeMeas
     Timemap timemap;
     Functor generateTimemap(&Object::GenerateTimemap);
     GenerateTimemapParams generateTimemapParams(this, &timemap, &generateTimemap);
+    generateTimemapParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
     this->Process(&generateTimemap, &generateTimemapParams);
 
     timemap.ToJson(output, includeRests, includeMeasures);
@@ -477,10 +509,14 @@ bool Doc::ExportFeatures(std::string &output, const std::string &options)
 
 void Doc::PrepareData()
 {
+    /************ Reset and initialization ************/
     if (m_dataPreparationDone) {
         Functor resetData(&Object::ResetData);
         this->Process(&resetData, NULL);
     }
+    Functor prepareDataInitialization(&Object::PrepareDataInitialization);
+    PrepareDataInitializationParams prepareDataInitializationParams(&prepareDataInitialization, this);
+    this->Process(&prepareDataInitialization, &prepareDataInitializationParams);
 
     /************ Store default durations ************/
 
@@ -553,22 +589,21 @@ void Doc::PrepareData()
     this->Process(&prepareLinking, &prepareLinkingParams);
 
     // If we have some left process again backward
-    if (!prepareLinkingParams.m_sameasUuidPairs.empty() || !prepareLinkingParams.m_stemSameasUuidPairs.empty()) {
+    if (!prepareLinkingParams.m_sameasIDPairs.empty() || !prepareLinkingParams.m_stemSameasIDPairs.empty()) {
         prepareLinkingParams.m_fillList = false;
         this->Process(&prepareLinking, &prepareLinkingParams, NULL, NULL, UNLIMITED_DEPTH, BACKWARD);
     }
 
     // If some are still there, then it is probably an issue in the encoding
-    if (!prepareLinkingParams.m_nextUuidPairs.empty()) {
-        LogWarning("%d element(s) with a @next could match the target", prepareLinkingParams.m_nextUuidPairs.size());
+    if (!prepareLinkingParams.m_nextIDPairs.empty()) {
+        LogWarning("%d element(s) with a @next could match the target", prepareLinkingParams.m_nextIDPairs.size());
     }
-    if (!prepareLinkingParams.m_sameasUuidPairs.empty()) {
-        LogWarning(
-            "%d element(s) with a @sameas could match the target", prepareLinkingParams.m_sameasUuidPairs.size());
+    if (!prepareLinkingParams.m_sameasIDPairs.empty()) {
+        LogWarning("%d element(s) with a @sameas could match the target", prepareLinkingParams.m_sameasIDPairs.size());
     }
-    if (!prepareLinkingParams.m_stemSameasUuidPairs.empty()) {
+    if (!prepareLinkingParams.m_stemSameasIDPairs.empty()) {
         LogWarning("%d element(s) with a @stem.sameas could match the target",
-            prepareLinkingParams.m_stemSameasUuidPairs.size());
+            prepareLinkingParams.m_stemSameasIDPairs.size());
     }
 
     /************ Resolve @plist ************/
@@ -579,21 +614,21 @@ void Doc::PrepareData()
     this->Process(&preparePlist, &preparePlistParams);
 
     // Process plist after all pairs has been collected
-    if (!preparePlistParams.m_interfaceUuidTuples.empty()) {
+    if (!preparePlistParams.m_interfaceIDTuples.empty()) {
         preparePlistParams.m_fillList = false;
         Functor processPlist(&Object::PrepareProcessPlist);
         this->Process(&processPlist, &preparePlistParams);
 
-        for (const auto &[plistInterface, uuid, objectReference] : preparePlistParams.m_interfaceUuidTuples) {
+        for (const auto &[plistInterface, id, objectReference] : preparePlistParams.m_interfaceIDTuples) {
             plistInterface->SetRef(objectReference);
         }
-        preparePlistParams.m_interfaceUuidTuples.clear();
+        preparePlistParams.m_interfaceIDTuples.clear();
     }
 
     // If some are still there, then it is probably an issue in the encoding
-    if (!preparePlistParams.m_interfaceUuidTuples.empty()) {
+    if (!preparePlistParams.m_interfaceIDTuples.empty()) {
         LogWarning(
-            "%d element(s) with a @plist could not match the target", preparePlistParams.m_interfaceUuidTuples.size());
+            "%d element(s) with a @plist could not match the target", preparePlistParams.m_interfaceIDTuples.size());
     }
 
     /************ Resolve cross staff ************/
@@ -634,16 +669,16 @@ void Doc::PrepareData()
 
     /************ Resolve some pointers by layer ************/
 
-    ArrayOfComparisons filters;
+    Filters filters;
     for (staves = initProcessingListsParams.m_layerTree.child.begin();
          staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
         for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
-            filters.clear();
+            filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
             AttNIntegerComparison matchLayer(LAYER, layers->first);
-            filters.push_back(&matchStaff);
-            filters.push_back(&matchLayer);
+            filters.Add(&matchStaff);
+            filters.Add(&matchLayer);
 
             PreparePointersByLayerParams preparePointersByLayerParams;
             Functor preparePointersByLayer(&Object::PreparePointersByLayer);
@@ -662,12 +697,12 @@ void Doc::PrepareData()
         for (staves = initProcessingListsParams.m_layerTree.child.begin();
              staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
             for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
-                filters.clear();
+                filters.Clear();
                 // Create ad comparison object for each type / @n
                 AttNIntegerComparison matchStaff(STAFF, staves->first);
                 AttNIntegerComparison matchLayer(LAYER, layers->first);
-                filters.push_back(&matchStaff);
-                filters.push_back(&matchLayer);
+                filters.Add(&matchStaff);
+                filters.Add(&matchLayer);
 
                 prepareDelayedTurnsParams.m_currentTurn = NULL;
                 prepareDelayedTurnsParams.m_previousElement = NULL;
@@ -685,14 +720,14 @@ void Doc::PrepareData()
         for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
             for (verses = layers->second.child.begin(); verses != layers->second.child.end(); ++verses) {
                 // std::cout << staves->first << " => " << layers->first << " => " << verses->first << '\n';
-                filters.clear();
+                filters.Clear();
                 // Create ad comparison object for each type / @n
                 AttNIntegerComparison matchStaff(STAFF, staves->first);
                 AttNIntegerComparison matchLayer(LAYER, layers->first);
                 AttNIntegerComparison matchVerse(VERSE, verses->first);
-                filters.push_back(&matchStaff);
-                filters.push_back(&matchLayer);
-                filters.push_back(&matchVerse);
+                filters.Add(&matchStaff);
+                filters.Add(&matchLayer);
+                filters.Add(&matchVerse);
 
                 // The first pass sets m_drawingFirstNote and m_drawingLastNote for each syl
                 // m_drawingLastNote is set only if the syl has a forward connector
@@ -726,12 +761,12 @@ void Doc::PrepareData()
     for (staves = initProcessingListsParams.m_layerTree.child.begin();
          staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
         for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
-            filters.clear();
+            filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
             AttNIntegerComparison matchLayer(LAYER, layers->first);
-            filters.push_back(&matchStaff);
-            filters.push_back(&matchLayer);
+            filters.Add(&matchStaff);
+            filters.Add(&matchLayer);
 
             // We set multiNumber to NONE for indicated we need to look at the staffDef when reaching the first staff
             PrepareRptParams prepareRptParams(this);
@@ -1324,16 +1359,16 @@ void Doc::ConvertMarkupDoc(bool permanent)
 
         // Process by layer for matching @tie attribute - we process notes and chords, looking at
         // GetTie values and pitch and oct for matching notes
-        ArrayOfComparisons filters;
+        Filters filters;
         for (staves = initProcessingListsParams.m_layerTree.child.begin();
              staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
             for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
-                filters.clear();
+                filters.Clear();
                 // Create ad comparison object for each type / @n
                 AttNIntegerComparison matchStaff(STAFF, staves->first);
                 AttNIntegerComparison matchLayer(LAYER, layers->first);
-                filters.push_back(&matchStaff);
-                filters.push_back(&matchLayer);
+                filters.Add(&matchStaff);
+                filters.Add(&matchLayer);
 
                 ConvertMarkupAnalyticalParams convertMarkupAnalyticalParams(permanent);
                 Functor convertMarkupAnalytical(&Object::ConvertMarkupAnalytical);
@@ -1347,11 +1382,20 @@ void Doc::ConvertMarkupDoc(bool permanent)
                     std::vector<Note *>::iterator iter;
                     for (iter = convertMarkupAnalyticalParams.m_currentNotes.begin();
                          iter != convertMarkupAnalyticalParams.m_currentNotes.end(); ++iter) {
-                        LogWarning("Unable to match @tie of note '%s', skipping it", (*iter)->GetUuid().c_str());
+                        LogWarning("Unable to match @tie of note '%s', skipping it", (*iter)->GetID().c_str());
                     }
                 }
             }
         }
+    }
+
+    if (m_markup & MARKUP_SCOREDEF_DEFINITIONS) {
+        LogMessage("Converting scoreDef markup...");
+        Functor convertMarkupScoreDef(&Object::ConvertMarkupScoreDef);
+        Functor convertMarkupScoreDefEnd(&Object::ConvertMarkupScoreDefEnd);
+        ConvertMarkupScoreDefParams convertMarkupScoreDefParams(
+            this, &convertMarkupScoreDef, &convertMarkupScoreDefEnd);
+        this->Process(&convertMarkupScoreDef, &convertMarkupScoreDefParams, &convertMarkupScoreDefEnd);
     }
 }
 
@@ -1361,7 +1405,8 @@ void Doc::TransposeDoc()
     transposer.SetBase600(); // Set extended chromatic alteration mode (allowing more than double sharps/flats)
 
     Functor transpose(&Object::Transpose);
-    TransposeParams transposeParams(this, &transpose, &transposer);
+    Functor transposeEnd(&Object::TransposeEnd);
+    TransposeParams transposeParams(this, &transpose, &transposeEnd, &transposer);
 
     if (m_options->m_transposeSelectedOnly.GetValue() == false) {
         transpose.m_visibleOnly = false;
@@ -1374,16 +1419,25 @@ void Doc::TransposeDoc()
                 m_options->m_transposeMdiv.GetKey().c_str(), m_options->m_transpose.GetKey().c_str());
         }
         transposeParams.m_transposition = m_options->m_transpose.GetValue();
-        this->Process(&transpose, &transposeParams);
+        this->Process(&transpose, &transposeParams, &transposeEnd);
     }
     else if (m_options->m_transposeMdiv.IsSet()) {
         // Transpose mdivs individually
-        std::set<std::string> uuids = m_options->m_transposeMdiv.GetKeys();
-        for (const std::string &uuid : uuids) {
-            transposeParams.m_selectedMdivUuid = uuid;
-            transposeParams.m_transposition = m_options->m_transposeMdiv.GetStrValue({ uuid });
-            this->Process(&transpose, &transposeParams);
+        std::set<std::string> ids = m_options->m_transposeMdiv.GetKeys();
+        for (const std::string &id : ids) {
+            transposeParams.m_selectedMdivID = id;
+            transposeParams.m_transposition = m_options->m_transposeMdiv.GetStrValue({ id });
+            this->Process(&transpose, &transposeParams, &transposeEnd);
         }
+    }
+
+    if (m_options->m_transposeToSoundingPitch.GetValue()) {
+        // Transpose to sounding pitch
+        transposeParams.m_selectedMdivID = "";
+        transposeParams.m_transposition = "";
+        transposeParams.m_transposer->SetTransposition(0);
+        transposeParams.m_transposeToSoundingPitch = true;
+        this->Process(&transpose, &transposeParams, &transposeEnd);
     }
 }
 
@@ -1393,7 +1447,7 @@ void Doc::ExpandExpansions()
     std::string expansionId = this->GetOptions()->m_expand.GetValue();
     if (expansionId.empty()) return;
 
-    Expansion *start = dynamic_cast<Expansion *>(this->FindDescendantByUuid(expansionId));
+    Expansion *start = dynamic_cast<Expansion *>(this->FindDescendantByID(expansionId));
     if (start == NULL) {
         LogMessage("Import MEI: expansion ID \"%s\" not found.", expansionId.c_str());
         return;
@@ -1407,7 +1461,7 @@ void Doc::ExpandExpansions()
     // Expansion *originalExpansion = new Expansion();
     // char rnd[35];
     // snprintf(rnd, 35, "expansion-notated-%016d", std::rand());
-    // originalExpansion->SetUuid(rnd);
+    // originalExpansion->SetID(rnd);
 
     // for (std::string ref : existingList) {
     //    originalExpansion->GetPlistInterface()->AddRef("#" + ref);
@@ -1415,7 +1469,7 @@ void Doc::ExpandExpansions()
 
     // start->GetParent()->InsertAfter(start, originalExpansion);
 
-    // std::cout << "[expand] original expansion xml:id=\"" << originalExpansion->GetUuid().c_str()
+    // std::cout << "[expand] original expansion xml:id=\"" << originalExpansion->GetID().c_str()
     //          << "\" plist={";
     // for (std::string s : existingList) std::cout << s.c_str() << ((s != existingList.back()) ? " " : "}.\n");
 
@@ -1773,12 +1827,6 @@ double Doc::GetLeftMargin(Object *object) const
             default: break;
         }
     }
-    else if (id == CLEF) {
-        Clef *clef = vrv_cast<Clef *>(object);
-        if (clef->GetAlignment() && (clef->GetAlignment()->GetType() == ALIGNMENT_CLEF)) {
-            return m_options->m_clefChangeFactor.GetValue() * this->GetLeftMargin(id);
-        }
-    }
     return this->GetLeftMargin(id);
 }
 
@@ -1814,12 +1862,6 @@ double Doc::GetRightMargin(Object *object) const
             case BarLinePosition::Left: return m_options->m_rightMarginLeftBarLine.GetValue();
             case BarLinePosition::Right: return m_options->m_rightMarginRightBarLine.GetValue();
             default: break;
-        }
-    }
-    else if (id == CLEF) {
-        Clef *clef = vrv_cast<Clef *>(object);
-        if (clef->GetAlignment() && (clef->GetAlignment()->GetType() == ALIGNMENT_CLEF)) {
-            return m_options->m_clefChangeFactor.GetValue() * this->GetRightMargin(id);
         }
     }
     return this->GetRightMargin(id);

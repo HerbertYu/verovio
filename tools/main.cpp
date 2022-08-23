@@ -5,7 +5,7 @@
 // Copyright (c) Authors and others. All rights reserved.
 /////////////////////////////////////////////////////////////////////////////
 
-#include <assert.h>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -161,40 +161,67 @@ void display_version()
     std::cout << "Verovio " << vrv::GetVersion() << std::endl;
 }
 
-void display_usage()
+void display_usage(const vrv::Options *options, const std::string &category)
 {
+    // map of all categories and expected string arguments for them
+    const std::map<vrv::OptionsCategory, std::string> categories = { { vrv::OptionsCategory::Base, "base" },
+        { vrv::OptionsCategory::General, "general" }, { vrv::OptionsCategory::Layout, "layout" },
+        { vrv::OptionsCategory::Margins, "margins" }, { vrv::OptionsCategory::Midi, "midi" },
+        { vrv::OptionsCategory::Selectors, "selectors" }, { vrv::OptionsCategory::Full, "full" } };
+
     std::cout.precision(2);
 
     display_version();
     std::cout << std::endl << "Example usage:" << std::endl << std::endl;
     std::cout << " verovio [-s scale] [-r resource-path] [-o outfile] infile" << std::endl << std::endl;
 
-    // These need to be kept in alphabetical order:
-    // -options with both short and long forms first
-    // -then options with long forms only
-    // -then debugging options
+    auto it = std::find_if(
+        categories.begin(), categories.end(), [&category](const std::pair<vrv::OptionsCategory, std::string> &value) {
+            return std::equal(value.second.begin(), value.second.end(), category.begin(), category.end(),
+                [](const char a, const char b) { return a == tolower(b); });
+        });
 
-    // Options with both short and long forms
-    vrv::Options options;
+    if (it == categories.end()) {
+        std::string optionStr;
+        std::cout << "Help manual categories: " << std::endl;
+        // Print base group options
+        optionStr.append(" -h ");
+        optionStr.append(categories.at(options->m_baseOptions.GetCategory()));
+        optionStr.append("\t");
+        optionStr.append(options->m_baseOptions.GetLabel());
+        optionStr.append("\n");
 
-    std::cout << "Options (marked as * are repeatable)" << std::endl;
-    const std::vector<vrv::Option *> *baseOptions = options.GetBaseOptions();
-
-    // All other option groups
-    for (auto const &option : *baseOptions) {
-        display_option(option);
+        const std::vector<vrv::OptionGrp *> *grps = options->GetGrps();
+        // Print each group one by one
+        for (const auto group : *grps) {
+            optionStr.append(" -h ");
+            optionStr.append(categories.at(group->GetCategory()));
+            optionStr.append("\t");
+            optionStr.append(group->GetLabel());
+            optionStr.append("\n");
+        }
+        optionStr.append(" -h full\tPrint all help manual and exit");
+        std::cout << optionStr << std::endl;
     }
+    else {
+        std::cout << "Options (marked as * are repeatable)" << std::endl;
+        if ((it->first == vrv::OptionsCategory::Base) || (it->first == vrv::OptionsCategory::Full)) {
+            const std::vector<vrv::Option *> *baseOptions = options->GetBaseOptions();
+            for (auto const &option : *baseOptions) {
+                display_option(option);
+            }
+        }
+        const std::vector<vrv::OptionGrp *> *grps = options->GetGrps();
+        for (const auto group : *grps) {
+            if (it->first == group->GetCategory() || (it->first == vrv::OptionsCategory::Full)) {
+                // Options with long forms only
+                std::cout << std::endl << group->GetLabel() << std::endl;
+                const std::vector<vrv::Option *> *options = group->GetOptions();
 
-    std::vector<vrv::OptionGrp *> *grps = options.GetGrps();
-
-    for (auto const &grp : *grps) {
-
-        // Options with long forms only
-        std::cout << std::endl << grp->GetLabel() << std::endl;
-        const std::vector<vrv::Option *> *options = grp->GetOptions();
-
-        for (auto const &option : *options) {
-            display_option(option);
+                for (auto const &option : *options) {
+                    display_option(option);
+                }
+            }
         }
     }
 }
@@ -218,19 +245,12 @@ int main(int argc, char **argv)
 
     int all_pages = 0;
     int page = 1;
-    int show_help = 0;
     int show_version = 0;
 
     // Create the toolkit instance without loading the font because
     // the resource path might be specified in the parameters
     // The fonts will be loaded later with Resources::InitFonts()
     vrv::Toolkit toolkit(false);
-
-    if (argc < 2) {
-        std::cerr << "Expected one input file but found none." << std::endl << std::endl;
-        display_usage();
-        exit(1);
-    }
 
     static struct option base_options[] = { //
         { "all-pages", no_argument, 0, 'a' }, //
@@ -253,6 +273,12 @@ int main(int argc, char **argv)
     vrv::Options *options = toolkit.GetOptions();
     const vrv::MapOfStrOptions *params = options->GetItems();
     int mapSize = (int)params->size();
+
+    if (argc < 2) {
+        std::cerr << "Expected one input file but found none." << std::endl << std::endl;
+        display_usage(options, "");
+        exit(1);
+    }
 
     struct option *long_options;
     int i = 0;
@@ -292,7 +318,7 @@ int main(int argc, char **argv)
     vrv::Option *opt = NULL;
     vrv::OptionBool *optBool = NULL;
     std::string resourcePath = toolkit.GetResourcePath();
-    while ((c = getopt_long(argc, argv, "ab:f:ho:p:r:s:t:vx:z", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "ab:f:h:o:p:r:s:t:vx:z", long_options, &option_index)) != -1) {
         switch (c) {
             case 0:
                 key = long_options[option_index].name;
@@ -357,7 +383,7 @@ int main(int argc, char **argv)
             case 'x':
                 seed = atoi(optarg);
                 options->m_xmlIdSeed.SetValue(seed);
-                vrv::Object::SeedUuid(seed);
+                vrv::Object::SeedID(seed);
                 break;
 
             case 'z':
@@ -367,12 +393,12 @@ int main(int argc, char **argv)
                 break;
 
             case 'h':
-                display_usage();
+                display_usage(options, optarg);
                 exit(0);
                 break;
 
             case '?':
-                display_usage();
+                display_usage(options, "");
                 exit(1);
                 break;
 
@@ -383,11 +409,6 @@ int main(int argc, char **argv)
 
     if (show_version) {
         display_version();
-        exit(0);
-    }
-
-    if (show_help) {
-        display_usage();
         exit(0);
     }
 
@@ -402,7 +423,7 @@ int main(int argc, char **argv)
     }
     else if (infile != "-") {
         std::cerr << "Incorrect number of arguments: expected one input file but found none." << std::endl << std::endl;
-        display_usage();
+        display_usage(options, "base");
         exit(1);
     }
 
@@ -426,10 +447,15 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if ((outformat != "svg") && (outformat != "mei") && (outformat != "midi") && (outformat != "timemap")
-        && (outformat != "humdrum") && (outformat != "hum") && (outformat != "pae") && (outformat != "pb-mei")) {
+    if (outformat == "pb-mei") {
+        outformat = "mei-pb";
+        vrv::LogWarning("Output to 'pb-mei' is deprecated, use 'mei-pb' instead.");
+    }
+    if ((outformat != "svg") && (outformat != "mei") && (outformat != "mei-basic") && (outformat != "mei-pb")
+        && (outformat != "midi") && (outformat != "timemap") && (outformat != "humdrum") && (outformat != "hum")
+        && (outformat != "pae")) {
         std::cerr << "Output format (" << outformat
-                  << ") can only be 'mei', 'pb-mei', 'svg', 'midi', 'humdrum' or 'pae'." << std::endl;
+                  << ") can only be 'mei', 'mei-basic', 'mei-pb', 'svg', 'midi', 'humdrum' or 'pae'." << std::endl;
         exit(1);
     }
 
@@ -449,6 +475,11 @@ int main(int argc, char **argv)
     }
     else {
         outfile = removeExtension(outfile);
+    }
+
+    // Skip the layout for MIDI and timemap output
+    if ((outformat == "midi") || (outformat == "timemap")) {
+        toolkit.SkipLayoutOnLoad(true);
     }
 
     // Load the std input or load the file
@@ -676,11 +707,13 @@ int main(int argc, char **argv)
         }
     }
     else {
-        const char *scoreBased = (outformat == "mei") ? "true" : "false";
+        const char *scoreBased = (outformat == "mei-pb") ? "false" : "true";
+        const char *basic = (outformat == "mei-basic") ? "true" : "false";
         const char *removeIds = (options->m_removeIds.GetValue()) ? "true" : "false";
         outfile += ".mei";
         if (all_pages) {
-            std::string params = vrv::StringFormat("{'scoreBased': %s, 'removeIds': %s}", scoreBased, removeIds);
+            std::string params
+                = vrv::StringFormat("{'scoreBased': %s, 'basic': %s, 'removeIds': %s}", scoreBased, basic, removeIds);
             if (std_output) {
                 std::string output;
                 std::cout << toolkit.GetMEI(params);
@@ -693,8 +726,8 @@ int main(int argc, char **argv)
             }
         }
         else {
-            std::string params
-                = vrv::StringFormat("{'scoreBased': %s, 'pageNo': %d, 'removeIds': %s}", scoreBased, page, removeIds);
+            std::string params = vrv::StringFormat(
+                "{'scoreBased': %s, 'basic': %s, 'pageNo': %d, 'removeIds': %s}", scoreBased, basic, page, removeIds);
             if (std_output) {
                 std::cout << toolkit.GetMEI(params);
             }

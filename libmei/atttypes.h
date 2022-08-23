@@ -1124,7 +1124,7 @@ enum data_MIDINAMES {
     MIDINAMES_Shamisen,
     MIDINAMES_Koto,
     MIDINAMES_Kalimba,
-    MIDINAMES_Bagpipe,
+    MIDINAMES_Bag_pipe,
     MIDINAMES_Fiddle,
     MIDINAMES_Shanai,
     MIDINAMES_Tinkle_Bell,
@@ -2138,6 +2138,11 @@ enum measurement_UNIT {
  */
 enum meiVersion_MEIVERSION {
     meiVersion_MEIVERSION_NONE = 0,
+    meiVersion_MEIVERSION_2013,
+    meiVersion_MEIVERSION_3_0_0,
+    meiVersion_MEIVERSION_4_0_0,
+    meiVersion_MEIVERSION_4_0_1,
+    meiVersion_MEIVERSION_5_0_0_devplusbasic,
     meiVersion_MEIVERSION_5_0_0_dev,
     meiVersion_MEIVERSION_MAX
 };

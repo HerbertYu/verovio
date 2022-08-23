@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 #include <math.h>
 
 //----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ void Mensur::Reset()
 // Functors methods
 //----------------------------------------------------------------------------
 
-int Mensur::LayerCountInTimeSpan(FunctorParams *functorParams)
+int Mensur::LayerCountInTimeSpan(FunctorParams *functorParams) const
 {
     LayerCountInTimeSpanParams *params = vrv_params_cast<LayerCountInTimeSpanParams *>(functorParams);
     assert(params);

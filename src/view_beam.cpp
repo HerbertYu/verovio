@@ -10,7 +10,7 @@
 //----------------------------------------------------------------------------
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <math.h>
 
@@ -18,14 +18,11 @@
 
 #include "beam.h"
 #include "beamspan.h"
-#include "comparison.h"
 #include "devicecontext.h"
 #include "doc.h"
 #include "ftrem.h"
 #include "layer.h"
 #include "layerelement.h"
-#include "measure.h"
-#include "note.h"
 #include "options.h"
 #include "smufl.h"
 #include "staff.h"
@@ -47,10 +44,8 @@ void View::DrawBeam(DeviceContext *dc, LayerElement *element, Layer *layer, Staf
     /******************************************************************/
     // initialization
 
-    const ArrayOfObjects *beamChildren = beam->GetList(beam);
-
     // Should we assert this at the beginning?
-    if (beamChildren->empty()) {
+    if (beam->HasEmptyList(beam)) {
         return;
     }
 
@@ -69,7 +64,7 @@ void View::DrawBeam(DeviceContext *dc, LayerElement *element, Layer *layer, Staf
     /******************************************************************/
     // Start the Beam graphic and draw the children
 
-    dc->StartGraphic(element, "", element->GetUuid());
+    dc->StartGraphic(element, "", element->GetID());
 
     /******************************************************************/
     // Draw the children
@@ -99,10 +94,8 @@ void View::DrawFTrem(DeviceContext *dc, LayerElement *element, Layer *layer, Sta
     /******************************************************************/
     // initialization
 
-    const ArrayOfObjects *fTremChildren = fTrem->GetList(fTrem);
-
     // Should we assert this at the beginning?
-    if (fTremChildren->empty()) {
+    if (fTrem->HasEmptyList(fTrem)) {
         return;
     }
     const ArrayOfBeamElementCoords *beamElementCoords = fTrem->GetElementCoords();
@@ -120,7 +113,7 @@ void View::DrawFTrem(DeviceContext *dc, LayerElement *element, Layer *layer, Sta
     /******************************************************************/
     // Start the grahic
 
-    dc->StartGraphic(element, "", element->GetUuid());
+    dc->StartGraphic(element, "", element->GetID());
 
     /******************************************************************/
     // Draw the children
@@ -433,10 +426,10 @@ void View::DrawBeamSpan(DeviceContext *dc, BeamSpan *beamSpan, System *system, O
 
     // Draw segments for the beamSpan
     if (graphic) {
-        dc->ResumeGraphic(graphic, graphic->GetUuid());
+        dc->ResumeGraphic(graphic, graphic->GetID());
     }
     else {
-        dc->StartGraphic(beamSpan, "", beamSpan->GetUuid(), false);
+        dc->StartGraphic(beamSpan, "", beamSpan->GetID(), false);
     }
 
     BeamSpanSegment *segment = beamSpan->GetSegmentForSystem(system);

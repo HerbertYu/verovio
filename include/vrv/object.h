@@ -9,10 +9,10 @@
 #define __VRV_OBJECT_H__
 
 #include <cstdlib>
-#include <ctime>
 #include <functional>
 #include <iterator>
 #include <map>
+#include <random>
 #include <string>
 
 //----------------------------------------------------------------------------
@@ -23,10 +23,12 @@
 
 namespace vrv {
 
+class AreaPosInterface;
 class Doc;
 class DurationInterface;
 class EditorialElement;
 class Output;
+class Filters;
 class Functor;
 class FunctorParams;
 class LinkingInterface;
@@ -34,6 +36,7 @@ class FacsimileInterface;
 class PitchInterface;
 class PositionInterface;
 class Resources;
+class SaveParams;
 class ScoreDefInterface;
 class StemmedDrawingInterface;
 class TextDirInterface;
@@ -125,6 +128,8 @@ public:
      * @name Getter to interfaces
      */
     ///@{
+    virtual AreaPosInterface *GetAreaPosInterface() { return NULL; }
+    virtual const AreaPosInterface *GetAreaPosInterface() const { return NULL; }
     virtual BeamDrawingInterface *GetBeamDrawingInterface() { return NULL; }
     virtual const BeamDrawingInterface *GetBeamDrawingInterface() const { return NULL; }
     virtual DurationInterface *GetDurationInterface() { return NULL; }
@@ -168,7 +173,7 @@ public:
      * needs to be overridden in the child class - otherwise, it will crash.
      * Because this will create a problem if we don't check this (the parents will
      * one the same child...)
-     * UUID: the uuid is copied, is needs to be reset later if this is not wished
+     * ID: the id is copied, it needs to be reset later if this is not wished
      */
     Object(const Object &object);
 
@@ -233,10 +238,10 @@ public:
      */
     virtual void CloneReset();
 
-    const std::string &GetUuid() const { return m_uuid; }
-    void SetUuid(std::string uuid);
-    void SwapUuid(Object *other);
-    void ResetUuid();
+    const std::string &GetID() const { return m_id; }
+    void SetID(const std::string &id) { m_id = id; }
+    void SwapID(Object *other);
+    void ResetID();
 
     /**
      * Methods for setting / getting comments
@@ -410,13 +415,13 @@ public:
     bool HasDescendant(Object *child, int deepness = UNLIMITED_DEPTH) const;
 
     /**
-     * Look for a descendant with the specified uuid (returns NULL if not found)
-     * This method is a wrapper for the Object::FindByUuid functor.
+     * Look for a descendant with the specified id (returns NULL if not found)
+     * This method is a wrapper for the Object::FindByID functor.
      */
     ///@{
-    Object *FindDescendantByUuid(const std::string &uuid, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD);
-    const Object *FindDescendantByUuid(
-        const std::string &uuid, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD) const;
+    Object *FindDescendantByID(const std::string &id, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD);
+    const Object *FindDescendantByID(
+        const std::string &id, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD) const;
     ///@}
 
     /**
@@ -511,6 +516,12 @@ public:
     bool DeleteChild(Object *child);
 
     /**
+     * Delete the children that match the comparison.
+     * Return the number of children deleted. Also mark the object as modified for invalidating the list.
+     */
+    int DeleteChildrenByComparison(Comparison *comparison);
+
+    /**
      * Returns all ancestors
      */
     ///@{
@@ -536,18 +547,24 @@ public:
      * Return the last ancestor that is NOT of the specified type.
      * The maxSteps parameter limits the search to a certain number of level if not -1.
      */
+    ///@{
     Object *GetLastAncestorNot(const ClassId classId, int maxSteps = -1);
+    const Object *GetLastAncestorNot(const ClassId classId, int maxSteps = -1) const;
+    ///@}
 
     /**
      * Return the first child that is NOT of the specified type.
      */
+    ///@{
     Object *GetFirstChildNot(const ClassId classId);
+    const Object *GetFirstChildNot(const ClassId classId) const;
+    ///@}
 
     /**
      * Fill the list of all the children LayerElement.
      * This is used for navigating in a Layer (See Layer::GetPrevious and Layer::GetNext).
      */
-    void FillFlatList(ArrayOfObjects *list);
+    void FillFlatList(ListOfConstObjects &list) const;
 
     /**
      * Check if the content was modified or not
@@ -557,7 +574,7 @@ public:
     /**
      * Mark the object and its parent (if any) as modified
      */
-    void Modify(bool modified = true);
+    void Modify(bool modified = true) const;
 
     /**
      * @name Setter and getter of the attribute flag
@@ -589,7 +606,7 @@ public:
      * Saves the object (and its children) using the specified output stream.
      * Creates functors that will parse the tree.
      */
-    virtual int Save(Output *output);
+    int SaveObject(SaveParams &saveParams);
 
     /**
      * Sort the child elements using std::stable_sort
@@ -608,7 +625,7 @@ public:
      * Main method that processes functors.
      * For each object, it will call the functor.
      * Depending on the code returned by the functor, it will also process it for all children.
-     * The ArrayOfComparisons filter parameter makes is possible to process only objects of a
+     * The Filters class parameter makes is possible to process only objects of a
      * type that matches the attribute value given in the Comparison object.
      * This is the generic way for parsing the tree, e.g., for extracting one single staff or layer.
      * Deepness specifies how many child levels should be processed. UNLIMITED_DEPTH means no
@@ -616,21 +633,19 @@ public:
      * skipFirst does not call the functor or endFunctor on the first (calling) level
      */
     ///@{
-    void Process(Functor *functor, FunctorParams *functorParams, Functor *endFunctor = NULL,
-        ArrayOfComparisons *filters = NULL, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD,
-        bool skipFirst = false);
-    void Process(Functor *functor, FunctorParams *functorParams, Functor *endFunctor = NULL,
-        ArrayOfComparisons *filters = NULL, int deepness = UNLIMITED_DEPTH, bool direction = FORWARD,
-        bool skipFirst = false) const;
+    void Process(Functor *functor, FunctorParams *functorParams, Functor *endFunctor = NULL, Filters *filters = NULL,
+        int deepness = UNLIMITED_DEPTH, bool direction = FORWARD, bool skipFirst = false);
+    void Process(Functor *functor, FunctorParams *functorParams, Functor *endFunctor = NULL, Filters *filters = NULL,
+        int deepness = UNLIMITED_DEPTH, bool direction = FORWARD, bool skipFirst = false) const;
     ///@}
 
     //----------------//
     // Static methods //
     //----------------//
 
-    static void SeedUuid(unsigned int seed = 0);
+    static void SeedID(unsigned int seed = 0);
 
-    static std::string GenerateRandUuid();
+    static std::string GenerateRandID();
 
     static bool sortByUlx(Object *a, Object *b);
 
@@ -646,7 +661,7 @@ public:
     /**
      * Add each LayerElements and its children to a flat list
      */
-    virtual int AddLayerElementToFlatList(FunctorParams *functorParams);
+    virtual int AddLayerElementToFlatList(FunctorParams *functorParams) const;
 
     /**
      * Builds a tree of ints (IntTree) with the staff/layer/verse numbers and for staff/layer to be then processed.
@@ -659,9 +674,9 @@ public:
     ///@{
 
     /**
-     * Find a Object with a specified uuid.
+     * Find a Object with a specified id.
      */
-    virtual int FindByUuid(FunctorParams *functorParams) const;
+    virtual int FindByID(FunctorParams *functorParams) const;
 
     /**
      * Find a Object with a Comparison functor.
@@ -711,17 +726,22 @@ public:
     /**
      * Look if the time / duration passed as parameter overlap with a space in the alignment references.
      */
-    virtual int LayerCountInTimeSpan(FunctorParams *) { return FUNCTOR_CONTINUE; }
+    virtual int LayerCountInTimeSpan(FunctorParams *) const { return FUNCTOR_CONTINUE; }
 
     /**
      * Look for all the layer elements that overlap with the time / duration within certain layer passed as parameter.
      */
-    virtual int LayerElementsInTimeSpan(FunctorParams *functorParams) { return FUNCTOR_CONTINUE; }
+    virtual int LayerElementsInTimeSpan(FunctorParams *functorParams) const { return FUNCTOR_CONTINUE; }
 
     /**
      * Retrieve the layer elements spanned by two points
      */
-    virtual int FindSpannedLayerElements(FunctorParams *) { return FUNCTOR_CONTINUE; }
+    virtual int FindSpannedLayerElements(FunctorParams *) const { return FUNCTOR_CONTINUE; }
+
+    /**
+     * Look for element by ID in StaffDef elements (Clef, KeySig, etc.) of all layers within
+     */
+    virtual int FindElementInLayerStaffDefsByID(FunctorParams *) const { return FUNCTOR_CONTINUE; }
 
     /**
      * Retrieve the minimum left and maximum right for an alignment.
@@ -735,7 +755,7 @@ public:
      * It will search recursively through children elements until note, chord or ftrem is found.
      * It can be used to look in neighboring layers for the similar search, but only first element will be checked.
      */
-    virtual int GetRelativeLayerElement(FunctorParams *) { return FUNCTOR_CONTINUE; }
+    virtual int GetRelativeLayerElement(FunctorParams *) const { return FUNCTOR_CONTINUE; }
 
     ///@}
 
@@ -786,6 +806,17 @@ public:
      * End Functor for Object::ConvertMarkupArtic
      */
     virtual int ConvertMarkupArticEnd(FunctorParams *) { return FUNCTOR_CONTINUE; }
+
+    /**
+     * Move scoreDef clef, keySig, meterSig and mensur to staffDef.
+     * When a staffDef already has one, it is not replaced.
+     */
+    virtual int ConvertMarkupScoreDef(FunctorParams *) { return FUNCTOR_CONTINUE; }
+
+    /**
+     * End Functor for Object::ConvertMarkupScoreDef
+     */
+    virtual int ConvertMarkupScoreDefEnd(FunctorParams *) { return FUNCTOR_CONTINUE; }
 
     /**
      * Save the content of any object by calling the appropriate FileOutputStream method.
@@ -1084,7 +1115,7 @@ public:
     /**
      * Calculate the Y relative position of tupletNum based on overlaps with other elements
      */
-    virtual int AdjustTupletNumOverlap(FunctorParams *) { return FUNCTOR_CONTINUE; }
+    virtual int AdjustTupletNumOverlap(FunctorParams *) const { return FUNCTOR_CONTINUE; }
 
     /**
      * Adjust the position of the StaffAlignment.
@@ -1198,6 +1229,11 @@ public:
     ///@{
 
     /**
+     * One time member initialization at the very begin
+     */
+    virtual int PrepareDataInitialization(FunctorParams *) { return FUNCTOR_CONTINUE; }
+
+    /**
      * Set the drawing cue size of all LayerElement
      */
     virtual int PrepareCueSize(FunctorParams *) { return FUNCTOR_CONTINUE; }
@@ -1285,7 +1321,7 @@ public:
 
     /**
      * Set wordpos and connector ends
-     * The functor is processed by staff/layer/verse using an ArrayOfComparisons filter.
+     * The functor is processed by staff/layer/verse using an Filters class.
      * At the end, the functor is processed by doc at the end of a document of closing opened syl.
      */
     virtual int PrepareLyrics(FunctorParams *) { return FUNCTOR_CONTINUE; }
@@ -1303,7 +1339,7 @@ public:
 
     /**
      * Functor for setting mRpt drawing numbers (if required)
-     * The functor is processed by staff/layer using an ArrayOfComparisons filter.
+     * The functor is processed by staff/layer using Filters class.
      */
     virtual int PrepareRpt(FunctorParams *) { return FUNCTOR_CONTINUE; }
 
@@ -1497,14 +1533,19 @@ public:
      */
     virtual int Transpose(FunctorParams *) { return FUNCTOR_CONTINUE; }
 
+    /**
+     * End functor for Object::Transpose
+     */
+    virtual int TransposeEnd(FunctorParams *) { return FUNCTOR_CONTINUE; }
+
 private:
     /**
-     * Method for generating the uuid.
+     * Method for generating the id.
      */
-    void GenerateUuid();
+    void GenerateID();
 
     /**
-     * Initialisation method taking the class id and a uuid prefix argument.
+     * Initialisation method taking the class id and a id prefix argument.
      */
     void Init(ClassId classId, const std::string &classIdStr);
 
@@ -1514,7 +1555,7 @@ private:
     ///@{
     void UpdateDocumentScore(bool direction);
     bool SkipChildren(Functor *functor) const;
-    bool FiltersApply(const ArrayOfComparisons *filters, Object *object) const;
+    bool FiltersApply(const Filters *filters, Object *object) const;
     ///@}
 
 public:
@@ -1544,10 +1585,10 @@ private:
     ClassId m_classId;
 
     /**
-     * Members for storing / generating uuids
+     * Members for storing / generating ids
      */
     ///@{
-    std::string m_uuid;
+    std::string m_id;
     std::string m_classIdStr;
     ///@}
 
@@ -1610,9 +1651,14 @@ private:
     //----------------//
 
     /**
-     * A static counter for uuid generation.
+     * A static counter for id generation.
      */
     static thread_local unsigned long s_objectCounter;
+
+    /**
+     * Pseudo random number engine for ID generation
+     */
+    static thread_local std::mt19937 s_randomGenerator;
 };
 
 //----------------------------------------------------------------------------
@@ -1636,23 +1682,33 @@ public:
     /**
      * Look for the Object in the list and return its position (-1 if not found)
      */
-    int GetListIndex(const Object *listElement);
+    int GetListIndex(const Object *listElement) const;
 
     /**
      * Gets the first item of type elementType starting at startFrom
      */
+    ///@{
+    const Object *GetListFirst(const Object *startFrom, const ClassId classId = UNSPECIFIED) const;
     Object *GetListFirst(const Object *startFrom, const ClassId classId = UNSPECIFIED);
-    Object *GetListFirstBackward(Object *startFrom, const ClassId classId = UNSPECIFIED);
+    const Object *GetListFirstBackward(const Object *startFrom, const ClassId classId = UNSPECIFIED) const;
+    Object *GetListFirstBackward(const Object *startFrom, const ClassId classId = UNSPECIFIED);
+    ///@}
 
     /**
      * Returns the previous object in the list (NULL if not found)
      */
-    Object *GetListPrevious(Object *listElement);
+    ///@{
+    const Object *GetListPrevious(const Object *listElement) const;
+    Object *GetListPrevious(const Object *listElement);
+    ///@}
 
     /**
      * Returns the next object in the list (NULL if not found)
      */
-    Object *GetListNext(Object *listElement);
+    ///@{
+    const Object *GetListNext(const Object *listElement) const;
+    Object *GetListNext(const Object *listElement);
+    ///@}
 
     /**
      * Return the list.
@@ -1660,25 +1716,40 @@ public:
      * If not, it updates the list and also calls FilterList.
      * Because this is an interface, we need to pass the object - not the best design.
      */
-    const ArrayOfObjects *GetList(Object *node);
+    ///@{
+    const ListOfConstObjects &GetList(const Object *node) const;
+    ListOfObjects GetList(const Object *node);
+    ///@}
+
+    /**
+     * Convenience functions that check if the list is up-to-date
+     * If not, the list is updated before returning the result
+     */
+    ///@{
+    bool HasEmptyList(const Object *node) const;
+    int GetListSize(const Object *node) const;
+    const Object *GetListFront(const Object *node) const;
+    Object *GetListFront(const Object *node);
+    const Object *GetListBack(const Object *node) const;
+    Object *GetListBack(const Object *node);
+    ///@}
 
 private:
-    mutable ArrayOfObjects m_list;
-    ArrayOfObjects::iterator m_iteratorCurrent;
+    mutable ListOfConstObjects m_list;
 
 protected:
     /**
      * Filter the list for a specific class.
      * For example, keep only notes in Beam
      */
-    virtual void FilterList(ArrayOfObjects *childList){};
+    virtual void FilterList(ListOfConstObjects &childList) const {};
 
 public:
     /**
      * Reset the list of children and call FilterList().
      * As for GetList, we need to pass the object.
      */
-    void ResetList(Object *node);
+    void ResetList(const Object *node) const;
 };
 
 //----------------------------------------------------------------------------
@@ -1700,19 +1771,19 @@ public:
     /**
      * Returns a contatenated version of all the text children
      */
-    std::wstring GetText(Object *node);
+    std::wstring GetText(const Object *node) const;
 
     /**
      * Fill an array of lines with concatenated content of each line
      */
-    void GetTextLines(Object *node, std::vector<std::wstring> &lines);
+    void GetTextLines(const Object *node, std::vector<std::wstring> &lines) const;
 
 protected:
     /**
      * Filter the list for a specific class.
      * For example, keep only notes in Beam
      */
-    virtual void FilterList(ArrayOfObjects *childList);
+    void FilterList(ListOfConstObjects &childList) const override;
 
 private:
     //
@@ -1774,7 +1845,7 @@ class ObjectComparison {
 public:
     ObjectComparison(const ClassId classId) { m_classId = classId; }
 
-    bool operator()(Object *object)
+    bool operator()(const Object *object)
     {
         if (m_classId == UNSPECIFIED) {
             return true;

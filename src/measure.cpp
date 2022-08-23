@@ -10,7 +10,7 @@
 //----------------------------------------------------------------------------
 
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <math.h>
 #include <midiext.h>
 
@@ -287,12 +287,11 @@ int Measure::GetRightBarLineXRel() const
     return 0;
 }
 
-int Measure::GetRightBarLineWidth(Doc *doc)
+int Measure::CalculateRightBarLineWidth(Doc *doc, int staffSize)
 {
     const BarLine *barline = this->GetRightBarLine();
     if (!barline) return 0;
 
-    const int staffSize = 100;
     const int barLineWidth = doc->GetDrawingBarLineWidth(staffSize);
     const int barLineThickWidth
         = doc->GetDrawingUnit(staffSize) * doc->GetOptions()->m_thickBarlineThickness.GetValue();
@@ -302,16 +301,16 @@ int Measure::GetRightBarLineWidth(Doc *doc)
     switch (barline->GetForm()) {
         case BARRENDITION_dbl:
         case BARRENDITION_dbldashed: {
-            width = barLineSeparation + barLineWidth / 2;
+            width = barLineSeparation + barLineWidth;
             break;
         }
         case BARRENDITION_rptend:
         case BARRENDITION_end: {
-            width = barLineSeparation + barLineWidth + barLineThickWidth / 2;
+            width = barLineSeparation + barLineWidth + barLineThickWidth;
             break;
         }
         case BARRENDITION_rptboth: {
-            width = 2 * barLineSeparation + barLineWidth / 2 + barLineThickWidth;
+            width = 2 * barLineSeparation + barLineWidth + barLineThickWidth;
             break;
         }
         default: break;
@@ -368,13 +367,13 @@ int Measure::GetInnerCenterX() const
 
 int Measure::GetDrawingOverflow()
 {
-    Functor adjustXOverlfow(&Object::AdjustXOverflow);
-    Functor adjustXOverlfowEnd(&Object::AdjustXOverflowEnd);
+    Functor adjustXOverflow(&Object::AdjustXOverflow);
+    Functor adjustXOverflowEnd(&Object::AdjustXOverflowEnd);
     AdjustXOverflowParams adjustXOverflowParams(0);
     adjustXOverflowParams.m_currentSystem = vrv_cast<System *>(this->GetFirstAncestor(SYSTEM));
     assert(adjustXOverflowParams.m_currentSystem);
     adjustXOverflowParams.m_lastMeasure = this;
-    this->Process(&adjustXOverlfow, &adjustXOverflowParams, &adjustXOverlfowEnd);
+    this->Process(&adjustXOverflow, &adjustXOverflowParams, &adjustXOverflowEnd);
     if (!adjustXOverflowParams.m_currentWidest) return 0;
 
     int measureRightX = this->GetDrawingX() + this->GetWidth();
@@ -382,7 +381,7 @@ int Measure::GetDrawingOverflow()
     return std::max(0, overflow);
 }
 
-int Measure::GetSectionRestartShift(Doc *doc) const
+int Measure::GetSectionRestartShift(const Doc *doc) const
 {
     if (this->IsFirstInSystem()) {
         return 0;
@@ -405,24 +404,23 @@ std::vector<Staff *> Measure::GetFirstStaffGrpStaves(ScoreDef *scoreDef)
     assert(scoreDef);
 
     std::vector<Staff *> staves;
-    std::vector<int>::iterator iter;
-    std::vector<int> staffList;
+    std::set<int> staffList;
 
     // First get all the staffGrps
     ListOfObjects staffGrps = scoreDef->FindAllDescendantsByType(STAFFGRP);
 
     // Then the @n of each first staffDef
     for (auto &staffGrp : staffGrps) {
-        StaffDef *staffDef = dynamic_cast<StaffDef *>((staffGrp)->GetFirst(STAFFDEF));
-        if (staffDef) staffList.push_back(staffDef->GetN());
+        StaffDef *staffDef = vrv_cast<StaffDef *>((staffGrp)->FindDescendantByType(STAFFDEF));
+        if (staffDef && (staffDef->GetDrawingVisibility() != OPTIMIZATION_HIDDEN)) staffList.insert(staffDef->GetN());
     }
 
     // Get the corresponding staves in the measure
-    for (iter = staffList.begin(); iter != staffList.end(); ++iter) {
+    for (auto iter = staffList.begin(); iter != staffList.end(); ++iter) {
         AttNIntegerComparison matchN(STAFF, *iter);
-        Staff *staff = dynamic_cast<Staff *>(this->FindDescendantByComparison(&matchN, 1));
+        Staff *staff = vrv_cast<Staff *>(this->FindDescendantByComparison(&matchN, 1));
         if (!staff) {
-            // LogDebug("Staff with @n '%d' not found in measure '%s'", *iter, measure->GetUuid().c_str());
+            // LogDebug("Staff with @n '%d' not found in measure '%s'", *iter, measure->GetID().c_str());
             continue;
         }
         staves.push_back(staff);
@@ -433,10 +431,15 @@ std::vector<Staff *> Measure::GetFirstStaffGrpStaves(ScoreDef *scoreDef)
 
 Staff *Measure::GetTopVisibleStaff()
 {
-    Staff *staff = NULL;
-    ListOfObjects staves = this->FindAllDescendantsByType(STAFF, false);
+    return const_cast<Staff *>(std::as_const(*this).GetTopVisibleStaff());
+}
+
+const Staff *Measure::GetTopVisibleStaff() const
+{
+    const Staff *staff = NULL;
+    ListOfConstObjects staves = this->FindAllDescendantsByType(STAFF, false);
     for (auto &child : staves) {
-        staff = vrv_cast<Staff *>(child);
+        staff = vrv_cast<const Staff *>(child);
         assert(staff);
         if (staff->DrawingIsVisible()) {
             break;
@@ -448,10 +451,15 @@ Staff *Measure::GetTopVisibleStaff()
 
 Staff *Measure::GetBottomVisibleStaff()
 {
-    Staff *bottomStaff = NULL;
-    ListOfObjects staves = this->FindAllDescendantsByType(STAFF, false);
+    return const_cast<Staff *>(std::as_const(*this).GetBottomVisibleStaff());
+}
+
+const Staff *Measure::GetBottomVisibleStaff() const
+{
+    const Staff *bottomStaff = NULL;
+    ListOfConstObjects staves = this->FindAllDescendantsByType(STAFF, false);
     for (const auto child : staves) {
-        Staff *staff = vrv_cast<Staff *>(child);
+        const Staff *staff = vrv_cast<const Staff *>(child);
         assert(staff);
         if (!staff->DrawingIsVisible()) {
             continue;
@@ -494,7 +502,7 @@ data_BARRENDITION Measure::GetDrawingRightBarLineByStaffN(int staffN) const
     return this->GetDrawingRightBarLine();
 }
 
-Measure::BarlineRenditionPair Measure::SelectDrawingBarLines(Measure *previous)
+Measure::BarlineRenditionPair Measure::SelectDrawingBarLines(const Measure *previous) const
 {
     // Barlines are stored in the map in the following format:
     // previous measure right -> current measure left -> expected barlines (previous, current)
@@ -677,7 +685,7 @@ std::vector<std::pair<LayerElement *, LayerElement *>> Measure::GetInternalTieEn
 // Measure functor methods
 //----------------------------------------------------------------------------
 
-int Measure::FindSpannedLayerElements(FunctorParams *functorParams)
+int Measure::FindSpannedLayerElements(FunctorParams *functorParams) const
 {
     FindSpannedLayerElementsParams *params = vrv_params_cast<FindSpannedLayerElementsParams *>(functorParams);
     assert(params);
@@ -743,7 +751,7 @@ int Measure::ConvertToCastOffMensural(FunctorParams *functorParams)
     }
     params->m_targetSubSystem->AddChild(measure);
 
-    ArrayOfComparisons filters;
+    Filters filters;
     // Now we can process by layer and move their content to (measure) segments
     for (auto const &staves : params->m_layerTree->child) {
         for (auto const &layers : staves.second.child) {
@@ -944,16 +952,16 @@ int Measure::AdjustLayers(FunctorParams *functorParams)
     if (!m_hasAlignmentRefWithMultipleLayers) return FUNCTOR_SIBLINGS;
 
     std::vector<int>::iterator iter;
-    ArrayOfComparisons filters;
+    Filters filters;
     for (iter = params->m_staffNs.begin(); iter != params->m_staffNs.end(); ++iter) {
-        filters.clear();
+        filters.Clear();
         // Create ad comparison object for each type / @n
         std::vector<int> ns;
         // -1 for barline attributes that need to be taken into account each time
         ns.push_back(BARLINE_REFERENCES);
         ns.push_back(*iter);
         AttNIntegerAnyComparison matchStaff(ALIGNMENT_REFERENCE, ns);
-        filters.push_back(&matchStaff);
+        filters.Add(&matchStaff);
 
         m_measureAligner.Process(params->m_functor, params, params->m_functorEnd, &filters);
     }
@@ -969,16 +977,16 @@ int Measure::AdjustDots(FunctorParams *functorParams)
     if (!m_hasAlignmentRefWithMultipleLayers) return FUNCTOR_SIBLINGS;
 
     std::vector<int>::iterator iter;
-    ArrayOfComparisons filters;
+    Filters filters;
     for (iter = params->m_staffNs.begin(); iter != params->m_staffNs.end(); ++iter) {
-        filters.clear();
+        filters.Clear();
         // Create ad comparison object for each type / @n
         std::vector<int> ns;
         // -1 for barline attributes that need to be taken into account each time
         ns.push_back(BARLINE_REFERENCES);
         ns.push_back(*iter);
         AttNIntegerAnyComparison matchStaff(ALIGNMENT_REFERENCE, ns);
-        filters.push_back(&matchStaff);
+        filters.Add(&matchStaff);
 
         m_measureAligner.Process(params->m_functor, params, params->m_functorEnd, &filters);
     }
@@ -1042,7 +1050,7 @@ int Measure::AdjustXPos(FunctorParams *functorParams)
 
     const bool hasSystemStartLine = this->IsFirstInSystem() && system->GetDrawingScoreDef()->HasSystemStartLine();
 
-    ArrayOfComparisons filters;
+    Filters filters;
     for (auto staffN : params->m_staffNs) {
         params->m_minPos = 0;
         params->m_upcomingMinPos = VRV_UNSET;
@@ -1059,14 +1067,15 @@ int Measure::AdjustXPos(FunctorParams *functorParams)
             params->m_upcomingMinPos = params->m_doc->GetDrawingBarLineWidth(params->m_staffSize);
         }
 
-        filters.clear();
         // Create ad comparison object for each type / @n
         std::vector<int> ns;
         // -1 for barline attributes that need to be taken into account each time
         ns.push_back(-1);
         ns.push_back(staffN);
         AttNIntegerAnyComparison matchStaff(ALIGNMENT_REFERENCE, ns);
-        filters.push_back(&matchStaff);
+        CrossAlignmentReferenceComparison matchCrossStaff;
+        filters.SetType(Filters::Type::AnyOf);
+        filters = { &matchStaff, &matchCrossStaff };
 
         params->m_measureTieEndpoints = this->GetInternalTieEndpoints();
         m_measureAligner.Process(params->m_functor, params, params->m_functorEnd, &filters);
@@ -1107,7 +1116,7 @@ int Measure::AdjustXPos(FunctorParams *functorParams)
             Object *object = layer->GetNext(multiRest);
             if (object && object->Is(CLEF)) {
                 const int clefWidth = object->GetContentRight() - object->GetContentLeft();
-                minMeasureWidth += clefWidth + params->m_doc->GetOptions()->m_clefChangeFactor.GetValue() * unit;
+                minMeasureWidth += clefWidth + unit;
             }
         }
     }
@@ -1299,7 +1308,7 @@ int Measure::CastOffToSelection(FunctorParams *functorParams)
     CastOffToSelectionParams *params = vrv_params_cast<CastOffToSelectionParams *>(functorParams);
     assert(params);
 
-    const bool startSelection = (!params->m_isSelection && this->GetUuid() == params->m_start);
+    const bool startSelection = (!params->m_isSelection && this->GetID() == params->m_start);
 
     if (startSelection) {
         params->m_page = new Page();
@@ -1309,7 +1318,7 @@ int Measure::CastOffToSelection(FunctorParams *functorParams)
         params->m_isSelection = true;
     }
 
-    const bool endSelection = (params->m_isSelection && this->GetUuid() == params->m_end);
+    const bool endSelection = (params->m_isSelection && this->GetID() == params->m_end);
 
     MoveItselfTo(params->m_currentSystem);
 
@@ -1463,7 +1472,7 @@ int Measure::PrepareTimePointingEnd(FunctorParams *functorParams)
 
     if (!params->m_timePointingInterfaces.empty()) {
         LogWarning("%d time pointing element(s) could not be matched in measure %s",
-            params->m_timePointingInterfaces.size(), this->GetUuid().c_str());
+            params->m_timePointingInterfaces.size(), this->GetID().c_str());
     }
 
     ListOfPointingInterClassIdPairs::iterator iter = params->m_timePointingInterfaces.begin();

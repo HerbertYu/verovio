@@ -30,6 +30,7 @@ class LabelAbbr;
  */
 class StaffGrp : public Object,
                  public ObjectListInterface,
+                 public AttBarring,
                  public AttBasic,
                  public AttLabelled,
                  public AttNNumberLike,
@@ -67,19 +68,23 @@ public:
     /**
      * Get first and last staffDef of the staff group without visibility optimization set to hidden
      */
+    ///@{
     std::pair<StaffDef *, StaffDef *> GetFirstLastStaffDef();
+    std::pair<const StaffDef *, const StaffDef *> GetFirstLastStaffDef() const;
+    ///@}
 
     /**
      * Return the maximum staff size in the staffGrp (100 if empty)
      */
-    int GetMaxStaffSize();
+    int GetMaxStaffSize() const;
 
     /**
      * @name Setter and getter of the group symbol
      */
     ///@{
     void SetGroupSymbol(GrpSym *grpSym);
-    GrpSym *GetGroupSymbol() const { return m_groupSymbol; }
+    GrpSym *GetGroupSymbol() { return m_groupSymbol; }
+    const GrpSym *GetGroupSymbol() const { return m_groupSymbol; }
     ///@}
 
     /**
@@ -104,6 +109,11 @@ public:
     LabelAbbr *GetLabelAbbrCopy() const;
     ///@}
 
+    /**
+     * Set visibility of the group and all of its nested children to SHOW
+     */
+    void SetEverythingVisible();
+
     //----------//
     // Functors //
     //----------//
@@ -117,7 +127,7 @@ protected:
     /**
      * Filter the flat list and keep only StaffDef elements.
      */
-    void FilterList(ArrayOfObjects *childList) override;
+    void FilterList(ListOfConstObjects &childList) const override;
 
 private:
     //

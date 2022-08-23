@@ -135,12 +135,14 @@ class Sic;
 class Slur;
 class Space;
 class Staff;
+class Stem;
 class Subst;
 class Supplied;
 class Surface;
 class Svg;
 class Syl;
 class Syllable;
+class Symbol;
 class System;
 class SystemElement;
 class SystemMilestoneEnd;
@@ -211,15 +213,23 @@ public:
     ///@}
 
     /**
+     * @name Setter and getter for MEI basic output
+     */
+    ///@{
+    void SetBasic(bool basic) { m_basic = basic; }
+    bool GetBasic() const { return m_basic; }
+    ///@}
+
+    /**
      * Score based filtering by measure, page or mdiv
      */
     ///@{
     bool HasFilter() const;
     void SetFirstPage(int page);
     void SetLastPage(int page);
-    void SetFirstMeasure(const std::string &uuid);
-    void SetLastMeasure(const std::string &uuid);
-    void SetMdiv(const std::string &uuid);
+    void SetFirstMeasure(const std::string &id);
+    void SetLastMeasure(const std::string &id);
+    void SetMdiv(const std::string &id);
     void ResetFilter();
     ///@}
 
@@ -251,6 +261,13 @@ private:
      * Reset
      */
     void Reset();
+
+    /**
+     * Helper checking if the object is tree object in score-based MEI
+     * For MEI basic output, also check if objects marked as attribute need to be kept as element (e.g., accid)
+     * or if some need to be written as attributes (e.g. scoreDef/clef)
+     */
+    bool IsTreeObject(Object *object) const;
 
     /**
      * Score based filtering
@@ -289,6 +306,11 @@ private:
      * Write the document
      */
     bool WriteDoc(Doc *doc);
+
+    /**
+     * Write revisionDesc to the header
+     */
+    void WriteRevisionDesc(pugi::xml_node meiHead);
 
     /**
      * Write the @xml:id to the currentNode
@@ -381,6 +403,7 @@ private:
     void WriteProport(pugi::xml_node currentNode, Proport *proport);
     void WriteRest(pugi::xml_node currentNode, Rest *rest);
     void WriteSpace(pugi::xml_node currentNode, Space *space);
+    void WriteStem(pugi::xml_node currentNode, Stem *stem);
     void WriteSyllable(pugi::xml_node currentNode, Syllable *syllable);
     void WriteTabDurSym(pugi::xml_node currentNode, TabDurSym *tabDurSym);
     void WriteTabGrp(pugi::xml_node currentNode, TabGrp *tabGrp);
@@ -429,6 +452,7 @@ private:
     void WriteNum(pugi::xml_node currentNode, Num *num);
     void WriteRend(pugi::xml_node currentNode, Rend *rend);
     void WriteSvg(pugi::xml_node currentNode, Svg *svg);
+    void WriteSymbol(pugi::xml_node currentNode, Symbol *symbol);
     void WriteText(pugi::xml_node currentNode, Text *text);
     ///@}
 
@@ -508,7 +532,7 @@ private:
 
     /** @name Methods for converting members into MEI attributes. */
     ///@{
-    std::string UuidToMeiStr(Object *element);
+    std::string IDToMeiStr(Object *element);
     std::string DocTypeToStr(DocType type);
     ///@}
 
@@ -518,6 +542,8 @@ private:
     std::ostringstream m_streamStringOutput;
     int m_indent;
     bool m_scoreBasedMEI;
+    /** A flag indicating that we want to produce MEI basic */
+    bool m_basic;
     pugi::xml_node m_mei;
 
     /** Current xml element */
@@ -537,10 +563,10 @@ private:
     int m_firstPage;
     int m_currentPage;
     int m_lastPage;
-    std::string m_firstMeasureUuid;
-    std::string m_lastMeasureUuid;
+    std::string m_firstMeasureID;
+    std::string m_lastMeasureID;
     RangeMatchLocation m_measureFilterMatchLocation;
-    std::string m_mdivUuid;
+    std::string m_mdivID;
     MatchLocation m_mdivFilterMatchLocation;
     ///@}
 
@@ -678,6 +704,7 @@ private:
     bool ReadProport(Object *parent, pugi::xml_node proport);
     bool ReadRest(Object *parent, pugi::xml_node rest);
     bool ReadSpace(Object *parent, pugi::xml_node space);
+    bool ReadStem(Object *parent, pugi::xml_node stem);
     bool ReadSyl(Object *parent, pugi::xml_node syl);
     bool ReadSyllable(Object *parent, pugi::xml_node syllable);
     bool ReadTabDurSym(Object *parent, pugi::xml_node tabDurSym);
@@ -727,6 +754,7 @@ private:
     bool ReadLb(Object *parent, pugi::xml_node lb);
     bool ReadRend(Object *parent, pugi::xml_node rend);
     bool ReadSvg(Object *parent, pugi::xml_node svg);
+    bool ReadSymbol(Object *parent, pugi::xml_node symbol);
     bool ReadText(Object *parent, pugi::xml_node text, bool trimLeft, bool trimRight);
     ///@}
 
@@ -822,7 +850,7 @@ private:
      * @name Various methods for reading / converting values.
      */
     ///@{
-    void SetMeiUuid(pugi::xml_node element, Object *object);
+    void SetMeiID(pugi::xml_node element, Object *object);
     DocType StrToDocType(std::string type);
     std::wstring LeftTrim(std::wstring str);
     std::wstring RightTrim(std::wstring str);
@@ -871,7 +899,7 @@ private:
     /**
      * The version of the file being read
      */
-    MEIVersion m_version;
+    meiVersion_MEIVERSION m_meiversion;
 
     /**
      * A flag indicating wheather we are reading page-based or score-based MEI

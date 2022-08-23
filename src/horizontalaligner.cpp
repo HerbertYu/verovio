@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 #include <math.h>
 
 //----------------------------------------------------------------------------
@@ -603,9 +603,9 @@ void Alignment::GetLeftRight(int staffN, int &minLeft, int &maxRight, const std:
     getAlignmentLeftRightParams.m_excludeClasses = m_excludes;
 
     if (staffN != VRV_UNSET) {
-        ArrayOfComparisons filters;
+        Filters filters;
         AttNIntegerComparison matchStaff(ALIGNMENT_REFERENCE, staffN);
-        filters.push_back(&matchStaff);
+        filters.Add(&matchStaff);
         this->Process(&getAlignmentLeftRight, &getAlignmentLeftRightParams, NULL, &filters);
     }
     else {
@@ -790,6 +790,20 @@ bool AlignmentReference::HasAccidVerticalOverlap(const ArrayOfObjects *objects)
             if (accid->VerticalContentOverlap(object)) return true;
         }
     }
+    return false;
+}
+
+bool AlignmentReference::HasCrossStaffElements() const
+{
+    ListOfConstObjects children;
+    ClassIdsComparison classId({ NOTE, CHORD });
+    this->FindAllDescendantsByComparison(&children, &classId);
+
+    for (const auto child : children) {
+        const LayerElement *layerElement = vrv_cast<const LayerElement *>(child);
+        if (layerElement->m_crossStaff) return true;
+    }
+
     return false;
 }
 
@@ -1030,7 +1044,7 @@ int Alignment::AdjustGraceXPos(FunctorParams *functorParams)
         assert(measureAligner);
 
         std::vector<int>::iterator iter;
-        ArrayOfComparisons filters;
+        Filters filters;
         for (iter = params->m_staffNs.begin(); iter != params->m_staffNs.end(); ++iter) {
             const int graceAlignerId = params->m_doc->GetOptions()->m_graceRhythmAlign.GetValue() ? 0 : *iter;
 
@@ -1069,10 +1083,10 @@ int Alignment::AdjustGraceXPos(FunctorParams *functorParams)
             params->m_graceMaxPos = graceMaxPos;
             params->m_graceUpcomingMaxPos = -VRV_UNSET;
             params->m_graceCumulatedXShift = VRV_UNSET;
-            filters.clear();
+            filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(ALIGNMENT_REFERENCE, (*iter));
-            filters.push_back(&matchStaff);
+            filters.Add(&matchStaff);
 
             if (this->HasGraceAligner(graceAlignerId)) {
                 this->GetGraceAligner(graceAlignerId)
@@ -1212,15 +1226,15 @@ int Alignment::AdjustDotsEnd(FunctorParams *functorParams)
                 if (dot->HorizontalSelfOverlap(element, thirdUnit)
                     && dot->VerticalSelfOverlap(element, 2 * thirdUnit)) {
                     if (element->Is({ CHORD, NOTE })) {
-                        if (dynamic_cast<AttAugmentDots *>(element)->GetDots() <= 0) continue;
+                        if (dynamic_cast<AttAugmentDots *>(element)->GetDots() < 1) continue;
                         overlapElements.emplace(dot, element);
                     }
                     else if (Object *chord = element->GetFirstAncestor(CHORD, UNLIMITED_DEPTH); chord) {
-                        if (vrv_cast<Chord *>(chord)->GetDots() <= 0) continue;
+                        if (vrv_cast<Chord *>(chord)->GetDots() < 1) continue;
                         overlapElements.emplace(dot, vrv_cast<LayerElement *>(chord));
                     }
                     else if (Object *note = element->GetFirstAncestor(NOTE, UNLIMITED_DEPTH); note) {
-                        if (vrv_cast<Note *>(note)->GetDots() <= 0) continue;
+                        if (vrv_cast<Note *>(note)->GetDots() < 1) continue;
                         overlapElements.emplace(dot, vrv_cast<LayerElement *>(note));
                     }
                 }

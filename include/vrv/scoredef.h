@@ -8,6 +8,7 @@
 #ifndef __VRV_SCOREDEF_H__
 #define __VRV_SCOREDEF_H__
 
+#include "atts_gestural.h"
 #include "atts_mei.h"
 #include "atts_shared.h"
 #include "drawinginterface.h"
@@ -102,6 +103,16 @@ public:
     // Functors //
     //----------//
 
+    /**
+     * See Object::ConvertMarkupScoreDef
+     */
+    int ConvertMarkupScoreDef(FunctorParams *) override;
+
+    /**
+     * See Object::ConvertMarkupScoreDef
+     */
+    int ConvertMarkupScoreDefEnd(FunctorParams *) override;
+
 private:
     //
 public:
@@ -123,6 +134,7 @@ class ScoreDef : public ScoreDefElement,
                  public AttDistances,
                  public AttEndings,
                  public AttOptimization,
+                 public AttScoreDefGes,
                  public AttTimeBase {
 public:
     /**
@@ -142,20 +154,20 @@ public:
     /**
      * Replace the scoreDef with the content of the newScoreDef.
      */
-    void ReplaceDrawingValues(ScoreDef *newScoreDef);
+    void ReplaceDrawingValues(const ScoreDef *newScoreDef);
 
     /**
      * Replace the corresponding staffDef with the content of the newStaffDef.
      * Looks for the staffDef with the same m_n (@n) and replaces the attribute set.
      * Attribute set is provided by the ScoreOrStaffDefInterface.
      */
-    void ReplaceDrawingValues(StaffDef *newStaffDef);
+    void ReplaceDrawingValues(const StaffDef *newStaffDef);
 
     /**
      * Replace the corresponding staffGrp with the labels of the newStaffGrp.
      * Looks for the staffGrp with the same m_n (@n) and replaces label child
      */
-    void ReplaceDrawingLabels(StaffGrp *newStaffGrp);
+    void ReplaceDrawingLabels(const StaffGrp *newStaffGrp);
 
     /**
      * Replace the staffDef score attributes with the ones currently set as drawing values.
@@ -166,17 +178,23 @@ public:
     /**
      * Get the staffDef with number n (NULL if not found).
      */
+    ///@{
     StaffDef *GetStaffDef(int n);
+    const StaffDef *GetStaffDef(int n) const;
+    ///@}
 
     /**
      * Get the staffGrp with number n (NULL if not found).
      */
+    ///@{
     StaffGrp *GetStaffGrp(const std::string &n);
+    const StaffGrp *GetStaffGrp(const std::string &n) const;
+    ///@}
 
     /**
      * Return all the @n values of the staffDef in a scoreDef
      */
-    std::vector<int> GetStaffNs();
+    std::vector<int> GetStaffNs() const;
 
     /**
      * Set the redraw flag to all staffDefs.
@@ -221,14 +239,14 @@ public:
     /**
      * Return the maximum staff size in the scoreDef (100 if empty)
      */
-    int GetMaxStaffSize();
+    int GetMaxStaffSize() const;
 
     bool IsSectionRestart() const;
 
     /**
      * @return True if a system start line will be drawn
      */
-    bool HasSystemStartLine();
+    bool HasSystemStartLine() const;
 
     //----------//
     // Functors //
@@ -270,6 +288,11 @@ public:
     int AlignMeasures(FunctorParams *functorParams) override;
 
     /**
+     * See Object::GenerateMIDI
+     */
+    int GenerateMIDI(FunctorParams *functorParams) override;
+
+    /**
      * See Object::JustifyX
      */
     int JustifyX(FunctorParams *functorParams) override;
@@ -279,11 +302,19 @@ public:
      */
     int PrepareDuration(FunctorParams *functorParams) override;
 
+    /**
+     * See Object::Transpose
+     */
+    ///@{
+    int Transpose(FunctorParams *functorParams) override;
+    int TransposeEnd(FunctorParams *functorParams) override;
+    ///@}
+
 protected:
     /**
      * Filter the flat list and keep only StaffDef elements.
      */
-    void FilterList(ArrayOfObjects *childList) override;
+    void FilterList(ListOfConstObjects &childList) const override;
 
 private:
     //

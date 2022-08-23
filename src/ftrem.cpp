@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 #include <math.h>
 
 //----------------------------------------------------------------------------
@@ -79,37 +79,32 @@ const ArrayOfBeamElementCoords *FTrem::GetElementCoords()
     return &m_beamElementCoords;
 }
 
-void FTrem::FilterList(ArrayOfObjects *childList)
+void FTrem::FilterList(ListOfConstObjects &childList) const
 {
-    ArrayOfObjects::iterator iter = childList->begin();
+    ListOfConstObjects::iterator iter = childList.begin();
 
-    while (iter != childList->end()) {
+    while (iter != childList.end()) {
         if (!(*iter)->Is(NOTE) && !(*iter)->Is(CHORD)) {
             // remove anything that is not an LayerElement (e.g. Verse, Syl, etc.)
-            iter = childList->erase(iter);
+            iter = childList.erase(iter);
             continue;
         }
         // also remove notes within chords
         if ((*iter)->Is(NOTE)) {
-            Note *note = vrv_cast<Note *>(*iter);
+            const Note *note = vrv_cast<const Note *>(*iter);
             assert(note);
             if (note->IsChordTone()) {
-                iter = childList->erase(iter);
+                iter = childList.erase(iter);
                 continue;
             }
         }
         ++iter;
     }
-
-    Staff *staff = this->GetAncestorStaff();
-
-    this->InitCoords(childList, staff, BEAMPLACE_NONE);
-    this->InitCue(false);
 }
 
 std::pair<int, int> FTrem::GetAdditionalBeamCount() const
 {
-    return { std::max(this->GetBeams(), this->GetBeamsFloat()), 0 };
+    return { 0, std::max(this->GetBeams(), this->GetBeamsFloat()) };
 }
 
 std::pair<int, int> FTrem::GetFloatingBeamCount() const
@@ -137,7 +132,10 @@ int FTrem::AdjustBeams(FunctorParams *functorParams)
     }
 
     if (!params->m_beam) {
-        if (m_drawingPlace != BEAMPLACE_mixed) {
+        if (m_drawingPlace == BEAMPLACE_mixed) {
+            m_beamSegment.RequestStaffSpace(params->m_doc, this);
+        }
+        else {
             params->m_beam = this;
             params->m_y1 = (*m_beamSegment.m_beamElementCoordRefs.begin())->m_yBeam;
             params->m_y2 = m_beamSegment.m_beamElementCoordRefs.back()->m_yBeam;
@@ -202,11 +200,21 @@ int FTrem::CalcStem(FunctorParams *functorParams)
     CalcStemParams *params = vrv_params_cast<CalcStemParams *>(functorParams);
     assert(params);
 
-    const ArrayOfObjects *fTremChildren = this->GetList(this);
+    const ListOfObjects &fTremChildren = this->GetList(this);
 
     // Should we assert this at the beginning?
-    if (fTremChildren->empty()) {
+    if (fTremChildren.empty()) {
         return FUNCTOR_CONTINUE;
+    }
+
+    Layer *layer = vrv_cast<Layer *>(this->GetFirstAncestor(LAYER));
+    assert(layer);
+    Staff *staff = vrv_cast<Staff *>(layer->GetFirstAncestor(STAFF));
+    assert(staff);
+
+    if (!this->HasCoords()) {
+        this->InitCoords(fTremChildren, staff, BEAMPLACE_NONE);
+        this->InitCue(false);
     }
 
     if (this->GetElementCoords()->size() != 2) {
@@ -215,11 +223,6 @@ int FTrem::CalcStem(FunctorParams *functorParams)
     }
 
     m_beamSegment.InitCoordRefs(this->GetElementCoords());
-
-    Layer *layer = vrv_cast<Layer *>(this->GetFirstAncestor(LAYER));
-    assert(layer);
-    Staff *staff = vrv_cast<Staff *>(layer->GetFirstAncestor(STAFF));
-    assert(staff);
 
     m_beamSegment.CalcBeam(layer, staff, params->m_doc, this);
 

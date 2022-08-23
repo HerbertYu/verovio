@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 #include <cctype>
 #include <fstream>
 #include <regex>
@@ -25,6 +25,7 @@
 #include "doc.h"
 #include "dot.h"
 #include "fermata.h"
+#include "functorparams.h"
 #include "gracegrp.h"
 #include "keyaccid.h"
 #include "keysig.h"
@@ -73,11 +74,12 @@ bool PAEOutput::Export(std::string &output)
     m_currentDots = -1;
     m_grace = false;
 
-    m_doc->GetCurrentScoreDef()->Save(this);
+    SaveParams saveParams(this, false);
+    m_doc->GetCurrentScoreDef()->SaveObject(saveParams);
 
     m_docScoreDef = false;
 
-    m_doc->Save(this);
+    m_doc->SaveObject(saveParams);
 
     output = m_streamStringOutput.str();
 
@@ -1390,11 +1392,11 @@ int PAEInput::getTimeInfo(const char *incipit, MeterSig *meter, Mensur *mensur, 
     std::cmatch matches;
     if (meter) {
         if (regex_match(timesig_str, matches, std::regex("(\\d+)/(\\d+)"))) {
-            meter->SetCount({ std::stoi(matches[1]) });
+            meter->SetCount({ { std::stoi(matches[1]) }, MeterCountSign::None });
             meter->SetUnit(std::stoi(matches[2]));
         }
         else if (regex_match(timesig_str, matches, std::regex("\\d+"))) {
-            meter->SetCount({ std::stoi(timesig_str) });
+            meter->SetCount({ { std::stoi(timesig_str) }, MeterCountSign::None });
             meter->SetUnit(1);
             meter->SetForm(METERFORM_num);
         }
@@ -1409,12 +1411,12 @@ int PAEInput::getTimeInfo(const char *incipit, MeterSig *meter, Mensur *mensur, 
         else if (strcmp(timesig_str, "c3") == 0) {
             // C3
             meter->SetSym(METERSIGN_common);
-            meter->SetCount({ 3 });
+            meter->SetCount({ { 3 }, MeterCountSign::None });
         }
         else if (strcmp(timesig_str, "c3/2") == 0) {
             // C3/2
             meter->SetSym(METERSIGN_common); // ??
-            meter->SetCount({ 3 });
+            meter->SetCount({ { 2 }, MeterCountSign::None });
             meter->SetUnit(2);
         }
         else {
@@ -1903,7 +1905,7 @@ void PAEInput::parseNote(pae::Note *note)
 
         if (note->fermata) {
             Fermata *fermata = new Fermata();
-            fermata->SetStartid("#" + rest->GetUuid());
+            fermata->SetStartid("#" + rest->GetID());
             m_measure->AddChild(fermata);
         }
 
@@ -1941,24 +1943,24 @@ void PAEInput::parseNote(pae::Note *note)
 
         if (note->fermata) {
             Fermata *fermata = new Fermata();
-            fermata->SetStartid("#" + mnote->GetUuid());
+            fermata->SetStartid("#" + mnote->GetID());
             m_measure->AddChild(fermata);
         }
 
         if (note->trill) {
             Trill *trill = new Trill();
-            trill->SetStartid("#" + mnote->GetUuid());
+            trill->SetStartid("#" + mnote->GetID());
             m_measure->AddChild(trill);
         }
 
         if (m_tie != NULL) {
-            m_tie->SetEndid("#" + mnote->GetUuid());
+            m_tie->SetEndid("#" + mnote->GetID());
             m_tie = NULL;
         }
 
         if (note->tie) {
             m_tie = new Tie();
-            m_tie->SetStartid("#" + mnote->GetUuid());
+            m_tie->SetStartid("#" + mnote->GetID());
             m_measure->AddChild(m_tie);
         }
 
@@ -2392,15 +2394,30 @@ namespace pae {
 
     Token::~Token() {}
 
-    bool Token::Is(ClassId classId) { return (m_object && m_object->Is(classId)); }
+    bool Token::Is(ClassId classId)
+    {
+        return (m_object && m_object->Is(classId));
+    }
 
-    bool Token::IsContainerEnd() { return (m_object && (m_char == pae::CONTAINER_END)); }
+    bool Token::IsContainerEnd()
+    {
+        return (m_object && (m_char == pae::CONTAINER_END));
+    }
 
-    bool Token::IsEnd() { return (!m_object && (m_char == pae::CONTAINER_END)); }
+    bool Token::IsEnd()
+    {
+        return (!m_object && (m_char == pae::CONTAINER_END));
+    }
 
-    bool Token::IsSpace() { return (m_char == ' '); }
+    bool Token::IsSpace()
+    {
+        return (m_char == ' ');
+    }
 
-    bool Token::IsVoid() { return (m_char == pae::VOID); }
+    bool Token::IsVoid()
+    {
+        return (m_char == pae::VOID);
+    }
 
     std::string Token::GetName()
     {
@@ -3054,7 +3071,7 @@ bool PAEInput::ConvertKeySig()
                 token.m_char = 0;
                 continue;
             }
-            if (!token.IsSpace()) {
+            if (!token.IsEnd() && !token.IsSpace()) {
                 LogPAE(ERR_004_KEY_SPACE, token);
                 if (m_pedanticMode) return false;
             }
@@ -3092,7 +3109,7 @@ bool PAEInput::ConvertClef()
                 token.m_char = 0;
                 continue;
             }
-            if (!token.IsSpace()) {
+            if (!token.IsEnd() && !token.IsSpace()) {
                 LogPAE(ERR_005_CLEF_SPACE, token);
                 if (m_pedanticMode) return false;
             }
@@ -3130,7 +3147,7 @@ bool PAEInput::ConvertMeterSigOrMensur()
                 token.m_char = 0;
                 continue;
             }
-            if (!token.IsSpace()) {
+            if (!token.IsEnd() && !token.IsSpace()) {
                 LogPAE(ERR_006_TIMESIG_SPACE, token);
                 if (m_pedanticMode) return false;
             }
@@ -3489,7 +3506,7 @@ bool PAEInput::ConvertTrill()
             token.m_char = 0;
             if (note) {
                 Trill *trill = new Trill();
-                trill->SetStartid("#" + note->GetUuid());
+                trill->SetStartid("#" + note->GetID());
                 token.m_object = trill;
             }
             else {
@@ -3547,7 +3564,7 @@ bool PAEInput::ConvertFermata()
                 if (token.m_char == ')') {
                     Fermata *fermata = new Fermata();
                     fermataToken->m_object = fermata;
-                    fermata->SetStartid("#" + fermataTarget->GetUuid());
+                    fermata->SetStartid("#" + fermataTarget->GetID());
                     fermataToken->m_char = 0;
                     token.m_char = 0;
                     fermataToken = NULL;
@@ -4145,20 +4162,20 @@ bool PAEInput::ConvertTie()
                 if (note->GetOct() != tokenNote->GetOct() || note->GetPname() != tokenNote->GetPname()) {
                     if (m_isMensural && tieToken) {
                         // This is probably a ligature - reset it back
-                        delete tie;
-                        tie = NULL;
-                        tieToken->m_object = NULL;
                         tieToken->m_char = '+';
-                        tieToken = NULL;
-                        note = NULL;
                     }
                     else {
                         LogPAE(ERR_037_TIE_PITCH, token);
                         if (m_pedanticMode) return false;
                     }
+                    delete tie;
+                    tie = NULL;
+                    tieToken->m_object = NULL;
+                    tieToken = NULL;
+                    note = NULL;
                 }
                 else {
-                    tie->SetEndid("#" + tokenNote->GetUuid());
+                    tie->SetEndid("#" + tokenNote->GetID());
                     tie = NULL;
                 }
             }
@@ -4176,7 +4193,7 @@ bool PAEInput::ConvertTie()
                 // Keep a pointer to the token in case this is a ligature
                 tieToken = &token;
                 tie = new Tie();
-                tie->SetStartid("#" + note->GetUuid());
+                tie->SetStartid("#" + note->GetID());
                 token.m_object = tie;
             }
             else {
@@ -4323,14 +4340,14 @@ bool PAEInput::ConvertAccidGes()
             assert(note);
             Accid *accid = vrv_cast<Accid *>(note->FindDescendantByType(ACCID));
 
-            std::string noteUuid = note->GetUuid();
+            std::string noteID = note->GetID();
             if (!accid) {
                 // Enc tied note with a prevous note with an accidental
-                if (ties.count(noteUuid)) {
+                if (ties.count(noteID)) {
                     Accid *tieAccid = new Accid();
                     note->AddChild(tieAccid);
-                    tieAccid->SetAccidGes(Att::AccidentalWrittenToGestural(ties[noteUuid]));
-                    ties.erase(noteUuid);
+                    tieAccid->SetAccidGes(Att::AccidentalWrittenToGestural(ties[noteID]));
+                    ties.erase(noteID);
                 }
                 // Nothing in front of the note, but something in the list - make it an accid.ges
                 else if ((currentAccids.count(note->GetPname()) != 0)) {
@@ -4364,7 +4381,7 @@ bool PAEInput::ConvertAccidGes()
                     = (accid->HasAccid()) ? accid->GetAccid() : Att::AccidentalGesturalToWritten(accid->GetAccidGes());
                 Tie *tie = vrv_cast<Tie *>(token.m_object);
                 assert(tie);
-                ties[ExtractUuidFragment(tie->GetEndid())] = accidWritten;
+                ties[ExtractIDFragment(tie->GetEndid())] = accidWritten;
             }
         }
         // Reset the last note unless we have a fermata or a trill
@@ -4384,8 +4401,11 @@ bool PAEInput::CheckHierarchy()
     pae::Token layerToken('_', pae::UNKOWN_POS, &layer);
 
     bool isValid = false;
+    // Limit the number of checks
+    int checkCount = 0;
 
-    while (!isValid) {
+    while (!isValid && checkCount < 5) {
+        checkCount++;
         isValid = true;
         for (auto &token : m_pae) {
             if (token.IsVoid()) continue;
@@ -4430,6 +4450,8 @@ bool PAEInput::CheckHierarchy()
                         if (m_pedanticMode) return false;
                         // Indicate that the data was not valid in this pass so we will check it again
                         isValid = false;
+                        // Remove the problematic container
+                        this->RemoveContainerToken(token.m_object);
                         // If we want ot continue, we should remove the  last one added from the tokens
                         this->RemoveContainerToken(stack.back()->m_object);
                         stack.pop_back();
@@ -4447,7 +4469,7 @@ bool PAEInput::CheckHierarchy()
         }
     }
 
-    return true;
+    return isValid;
 }
 
 bool PAEInput::CheckContentPreBuild()
@@ -4463,9 +4485,9 @@ bool PAEInput::CheckContentPreBuild()
             ++token;
             continue;
         }
-
         // Check that the measure rest is at the beginning of a measure
-        if (token->Is(MULTIREST) && previousToken && !previousToken->Is(MEASURE)) {
+        if (token->Is(MULTIREST) && previousToken && !previousToken->Is(MEASURE) && !previousToken->Is(KEYSIG)
+            && !previousToken->Is(METERSIG) && !previousToken->Is(METERSIGGRP)) {
             LogPAE(ERR_065_MREST_INVALID_MEASURE, *token);
             if (m_pedanticMode) return false;
             Measure *measure = new Measure();
@@ -4696,18 +4718,18 @@ bool PAEInput::ParseMeterSig(MeterSig *meterSig, const std::string &paeStr, pae:
     if (paeStr.size() < 1) {
         LogPAE(ERR_047_TIMESIG_INCOMPLETE, token);
         if (m_pedanticMode) return false;
-        meterSig->SetCount({ 4 });
+        meterSig->SetCount({ { 4 }, MeterCountSign::None });
         meterSig->SetUnit(4);
         return true;
     }
 
     std::cmatch matches;
     if (regex_match(paeStr.c_str(), matches, std::regex("(\\d+)/(\\d+)"))) {
-        meterSig->SetCount({ std::stoi(matches[1]) });
+        meterSig->SetCount({ { std::stoi(matches[1]) }, MeterCountSign::None });
         meterSig->SetUnit(std::stoi(matches[2]));
     }
     else if (regex_match(paeStr.c_str(), matches, std::regex("\\d+"))) {
-        meterSig->SetCount({ std::stoi(paeStr.c_str()) });
+        meterSig->SetCount({ { std::stoi(paeStr) }, MeterCountSign::None });
         meterSig->SetUnit(1);
         meterSig->SetForm(METERFORM_num);
     }
@@ -4722,12 +4744,12 @@ bool PAEInput::ParseMeterSig(MeterSig *meterSig, const std::string &paeStr, pae:
     else if (paeStr == "c3") {
         // C3
         meterSig->SetSym(METERSIGN_common);
-        meterSig->SetCount({ 3 });
+        meterSig->SetCount({ { 3 }, MeterCountSign::None });
     }
     else if (paeStr == "c3/2") {
         // C3/2
         meterSig->SetSym(METERSIGN_common); // ??
-        meterSig->SetCount({ 3 });
+        meterSig->SetCount({ { 3 }, MeterCountSign::None });
         meterSig->SetUnit(2);
     }
     else {
