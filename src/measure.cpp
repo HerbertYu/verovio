@@ -1650,7 +1650,7 @@ int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
                 if (event.tick >= starttime * tpq && event.tick < endtime * tpq) {
                     auto tick = event.tick + repeatAdditionalTime * tpq;
                     params->m_midiFile->addEvent(params->m_midiTrack, tick, event);
-                    fprintf(stdout, "[MidiFile]addEvent track:%d, from: %d, tick:%d\n",params->m_midiTrack, (int)(params->m_repeatStartTime * tpq), (int)tick);
+//                    fprintf(stdout, "[MidiFile]addEvent track:%d, from: %d, tick:%d\n",params->m_midiTrack, (int)(params->m_repeatStartTime * tpq), (int)tick);
                 }
             }
 

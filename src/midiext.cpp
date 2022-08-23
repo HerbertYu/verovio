@@ -109,7 +109,7 @@ namespace vrv {
             entry->pageNo = page->GetPageIdx();
         }
 
-        fprintf(stdout, "[MidiExt]addNote track:%d,tick:%d,note:%d\n", staffNo, tick, pitch);
+//        fprintf(stdout, "[MidiExt]addNote track:%d,tick:%d,note:%d\n", staffNo, tick, pitch);
     }
 
     MidiExtEntry *MidiExt::GetTimeEntry(int tick) {
