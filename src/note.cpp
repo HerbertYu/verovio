@@ -835,9 +835,8 @@ void Note::GenerateGraceNoteMIDI(FunctorParams *functorParams, double startTime,
             auto object = params->m_graceRefs[index];
             if (object->Is(CHORD)) {
                 auto chord = dynamic_cast<Chord*>(object);
-                const ArrayOfObjects *notes = chord->GetList(chord);
-                assert(notes);
-                for (Object *obj : *notes) {
+                const ListOfObjects &notes = chord->GetList(chord);
+                for (Object *obj : notes) {
                     Note *note = vrv_cast<Note *>(obj);
                     assert(note);
                     params->m_midiExt->AddNote(startTime * tpq, note);

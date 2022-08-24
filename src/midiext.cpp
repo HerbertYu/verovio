@@ -23,6 +23,7 @@
 #include "elementpart.h"
 #include "artic.h"
 #include "vrv.h"
+#include "stem.h"
 #include "midi/MidiFile.h"
 
 namespace vrv {
@@ -68,35 +69,35 @@ namespace vrv {
         // Store the element ID in list to turn on at given time - note or rest
         Note *note = dynamic_cast<Note *>(object);
         auto pitch = note->GetMIDIPitch();
-        auto uuid = object->GetUuid();
+        auto uuid = object->GetID();
         std::vector<std::string> elements;
         elements.emplace_back(uuid);
         if (beam) {
-            elements.emplace_back(beam->GetUuid());
+            elements.emplace_back(beam->GetID());
         }
         if (accid) {
-            elements.emplace_back(accid->GetUuid());
+            elements.emplace_back(accid->GetID());
         }
         if (atric) {
-            elements.emplace_back(atric->GetUuid());
+            elements.emplace_back(atric->GetID());
         }
         if (dots) {
-            elements.emplace_back(dots->GetUuid());
+            elements.emplace_back(dots->GetID());
         }
         if (stem) {
-            elements.emplace_back(stem->GetUuid());
+            elements.emplace_back(stem->GetID());
         }
         if (flag) {
-            elements.emplace_back(flag->GetUuid());
+            elements.emplace_back(flag->GetID());
         }
         if (chordFlag) {
-            elements.emplace_back(chordFlag->GetUuid());
+            elements.emplace_back(chordFlag->GetID());
         }
         if (chordStem) {
-            elements.emplace_back(chordStem->GetUuid());
+            elements.emplace_back(chordStem->GetID());
         }
         if (chordDots) {
-            elements.emplace_back(chordDots->GetUuid());
+            elements.emplace_back(chordDots->GetID());
         }
         entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
@@ -120,7 +121,7 @@ namespace vrv {
     void MidiExt::AddMeasure(int tick, int duration, Measure *measure) {
         auto system = dynamic_cast<System *>(measure->GetFirstAncestor(SYSTEM));
         if (system) {
-            auto uuid = system->GetUuid();
+            auto uuid = system->GetID();
             if (m_systemUuid.count(uuid) == 0) {
                 m_systemUuid[uuid] = m_systemUuid.size();
             }
