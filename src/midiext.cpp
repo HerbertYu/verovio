@@ -102,7 +102,14 @@ namespace vrv {
         entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
         if (measure) {
-            entry->measureNo = std::stoi(measure->GetN()) - 1;
+            auto measureNo = -1;
+            try {
+                measureNo = std::stoi(measure->GetN()) - 1;
+            } catch (std::exception& e) {
+                ;
+            }
+
+            entry->measureNo = measureNo;
         }
 
         Page *page = dynamic_cast<Page *>(object->GetFirstAncestor(PAGE));
@@ -125,11 +132,17 @@ namespace vrv {
             if (m_systemUuid.count(uuid) == 0) {
                 m_systemUuid[uuid] = m_systemUuid.size();
             }
-            m_measureTicks[tick] = MidiExtMeasure{
-                    std::stoi(measure->GetN()) - 1,
-                    duration,
-                    m_systemUuid[uuid]
-            };
+            auto measureNo = -1;
+            try {
+                measureNo = std::stoi(measure->GetN()) - 1;
+                m_measureTicks[tick] = MidiExtMeasure{
+                        measureNo,
+                        duration,
+                        m_systemUuid[uuid]
+                };
+            } catch (std::exception& e) {
+                fprintf(stdout, "[MidiExt]measure no error:%s\n", measure->GetN().c_str());
+            }
         }
     }
 
