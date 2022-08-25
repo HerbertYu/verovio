@@ -105,6 +105,7 @@ namespace vrv {
             elements.emplace_back(chordDots->GetID());
         }
         entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
+        fprintf(stdout, "[MidiExt]add note:%d,staff:%d\n",pitch,staffNo);
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
         if (measure) {
             auto measureNo = -1;

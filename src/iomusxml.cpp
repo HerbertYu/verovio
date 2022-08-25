@@ -3065,7 +3065,12 @@ void MusicXmlInput::ReadMusicXmlNote(
         }
 
         // ties
-        ReadMusicXmlTies(notations.node(), layer, note, measureNum);
+        pugi::xpath_node_set xmlTies = notations.node().select_nodes("tied");
+        auto iter = xmlTies.begin();
+        while (iter != xmlTies.end()) {
+            ReadMusicXmlTies(iter->node(), layer, note, measureNum);
+            iter++;
+        }
 
         // articulation
         std::vector<data_ARTICULATION> artics;
@@ -3729,10 +3734,7 @@ void MusicXmlInput::ReadMusicXmlBeamStart(const pugi::xml_node &node, const pugi
 void MusicXmlInput::ReadMusicXmlTies(
     const pugi::xml_node &node, Layer *layer, Note *note, const std::string &measureNum)
 {
-    pugi::xpath_node xmlTie = node.select_node("tied");
-    if (!xmlTie) return;
-
-    const std::string tieType = xmlTie.node().attribute("type").as_string();
+    const std::string tieType = node.attribute("type").as_string();
     if ("stop" == tieType) { // add to stack if (endTie) or if pitch/oct match to open tie on m_tieStack
         if (!m_tieStack.empty() && note->IsEnharmonicWith(m_tieStack.back().second)) {
             m_tieStack.back().first->SetEndid("#" + note->GetID());
@@ -3749,11 +3751,11 @@ void MusicXmlInput::ReadMusicXmlTies(
     if ("start" == tieType) {
         Tie *tie = new Tie();
         // color
-        tie->SetColor(xmlTie.node().attribute("color").as_string());
+        tie->SetColor(node.attribute("color").as_string());
         // placement and orientation
-        tie->SetCurvedir(InferCurvedir(xmlTie.node()));
-        tie->SetLform(tie->AttCurveRend::StrToLineform(xmlTie.node().attribute("line-type").as_string()));
-        if (xmlTie.node().attribute("id")) tie->SetID(xmlTie.node().attribute("id").as_string());
+        tie->SetCurvedir(InferCurvedir(node));
+        tie->SetLform(tie->AttCurveRend::StrToLineform(node.attribute("line-type").as_string()));
+        if (node.attribute("id")) tie->SetID(node.attribute("id").as_string());
         // add it to the stack
         m_controlElements.push_back({ measureNum, tie });
         OpenTie(note, tie);
@@ -3762,11 +3764,11 @@ void MusicXmlInput::ReadMusicXmlTies(
     else if ("let-ring" == tieType) {
         Lv *lv = new Lv();
         // color
-        lv->SetColor(xmlTie.node().attribute("color").as_string());
+        lv->SetColor(node.attribute("color").as_string());
         // placement and orientation
-        lv->SetCurvedir(InferCurvedir(xmlTie.node()));
-        lv->SetLform(lv->AttCurveRend::StrToLineform(xmlTie.node().attribute("line-type").as_string()));
-        if (xmlTie.node().attribute("id")) lv->SetID(xmlTie.node().attribute("id").as_string());
+        lv->SetCurvedir(InferCurvedir(node));
+        lv->SetLform(lv->AttCurveRend::StrToLineform(node.attribute("line-type").as_string()));
+        if (node.attribute("id")) lv->SetID(node.attribute("id").as_string());
         // add it to the stack
         m_controlElements.push_back({ measureNum, lv });
         // set startid to the current note and set second timestamp (endpoint) right away, since we're going to link
