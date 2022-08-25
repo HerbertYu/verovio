@@ -24,6 +24,7 @@
 #include "artic.h"
 #include "vrv.h"
 #include "stem.h"
+#include "tuplet.h"
 #include "midi/MidiFile.h"
 
 namespace vrv {
@@ -56,6 +57,7 @@ namespace vrv {
         auto staff = dynamic_cast<Staff *>(object->GetFirstAncestor(STAFF));
         int staffNo = staff ? staff->GetN() : 0;
         auto beam = dynamic_cast<Beam *>(object->GetFirstAncestor(vrv::BEAM));
+        auto tuplet = dynamic_cast<Tuplet *>(object->GetFirstAncestor(vrv::TUPLET));
         auto accid = dynamic_cast<Accid *>(object->FindDescendantByType(vrv::ACCID));
         auto atric = dynamic_cast<Artic *>(object->FindDescendantByType(vrv::ARTIC));
         auto dots = dynamic_cast<Dots *>(object->FindDescendantByType(vrv::DOTS));
@@ -74,6 +76,9 @@ namespace vrv {
         elements.emplace_back(uuid);
         if (beam) {
             elements.emplace_back(beam->GetID());
+        }
+        if (tuplet) {
+            elements.emplace_back(tuplet->GetID());
         }
         if (accid) {
             elements.emplace_back(accid->GetID());
