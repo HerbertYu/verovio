@@ -495,7 +495,6 @@ protected:
     ///@{
     void DrawMensur(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
     void DrawMensuralNote(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
-    void DrawMensuralRest(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
     void DrawDotInLigature(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
     void DrawPlica(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
     void DrawProport(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff, Measure *measure);
@@ -506,8 +505,7 @@ protected:
      * Defined in view_mensural.cpp
      */
     ///@{
-    void DrawMensuralStem(DeviceContext *dc, Note *note, Staff *staff, data_STEMDIRECTION dir, int radius, int xn,
-        int originY, int heightY = 0);
+    void DrawMensuralStem(DeviceContext *dc, Note *note, Staff *staff, data_STEMDIRECTION dir, int xn, int originY);
     void DrawMaximaToBrevis(DeviceContext *dc, int y, LayerElement *element, Layer *layer, Staff *staff);
     void DrawProportFigures(DeviceContext *dc, int x, int y, int num, int numBase, Staff *staff);
     void DrawLigatureNote(DeviceContext *dc, LayerElement *element, Layer *layer, Staff *staff);
@@ -630,7 +628,7 @@ private:
     /**
      * Internal method to find stem direction for notes of mensural notation
      */
-    data_STEMDIRECTION GetMensuralStemDirection(Layer *layer, Note *note, int verticalCenter);
+    data_STEMDIRECTION GetMensuralStemDir(Layer *layer, Note *note, int verticalCenter);
 
 public:
     /** Document */

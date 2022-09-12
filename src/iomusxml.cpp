@@ -218,7 +218,8 @@ void MusicXmlInput::ProcessClefChangeQueue(Section *section)
             else {
                 // For previous measure we need to make sure that clef is set at the end, so pass high duration value
                 // (since it won't matter there) and set measureNum to empty, since it doesn't matter as well
-                const int endDuration = 1024;
+                int endDuration = m_ppq;
+                for (int &num : m_meterCount) endDuration *= num;
                 musicxml::ClefChange previousClefChange(
                     std::string(""), previousStaff, previousLayer, clefChange.m_clef, endDuration, false);
                 AddClefs(previousMeasure, previousClefChange);
@@ -2139,7 +2140,7 @@ void MusicXmlInput::ReadMusicXmlDirection(
         TextRendition(dynamics, dynam);
         if (defaultY == 0) defaultY = dynamics.first().node().attribute("default-y").as_int();
         // parse the default_y attribute and transform to vgrp value, to vertically align dynamics and directives
-        defaultY = (defaultY <= 0) ? std::abs(defaultY) : defaultY + 200;
+        defaultY = (defaultY < 0) ? std::abs(defaultY) : defaultY + 200;
         dynam->SetVgrp(defaultY);
         m_controlElements.push_back({ measureNum, dynam });
         m_dynamStack.push_back(dynam);

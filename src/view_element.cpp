@@ -266,7 +266,7 @@ void View::DrawAccid(DeviceContext *dc, LayerElement *element, Layer *layer, Sta
             if (note->IsMensuralDur()) {
                 if (accid->GetFunc() != accidLog_FUNC_edit) onStaff = (accid->GetOnstaff() != BOOLEAN_false);
                 const int verticalCenter = staffTop - (staff->m_drawingLines - 1) * unit;
-                const data_STEMDIRECTION stemDir = this->GetMensuralStemDirection(layer, note, verticalCenter);
+                const data_STEMDIRECTION stemDir = this->GetMensuralStemDir(layer, note, verticalCenter);
                 if ((drawingDur > DUR_1) || (drawingDur < DUR_BR)) {
                     if (stemDir == STEMDIRECTION_up) {
                         noteTop = note->GetDrawingY() + unit * STANDARD_STEMLENGTH;
@@ -560,7 +560,9 @@ void View::DrawClef(DeviceContext *dc, LayerElement *element, Layer *layer, Staf
 
     // hidden clef
     if (clef->GetVisible() == BOOLEAN_false) {
+        dc->StartGraphic(element, "", element->GetID());
         clef->SetEmptyBB();
+        dc->EndGraphic(element, this);
         return;
     }
 
@@ -892,7 +894,9 @@ void View::DrawKeySig(DeviceContext *dc, LayerElement *element, Layer *layer, St
 
     // hidden key signature
     if (keySig->GetVisible() == BOOLEAN_false) {
+        dc->StartGraphic(element, "", element->GetID());
         keySig->SetEmptyBB();
+        dc->EndGraphic(element, this);
         return;
     }
 
@@ -975,6 +979,14 @@ void View::DrawMeterSig(DeviceContext *dc, LayerElement *element, Layer *layer, 
     MeterSig *meterSig = vrv_cast<MeterSig *>(element);
     assert(meterSig);
 
+    // hidden time signature
+    if (meterSig->GetForm() == METERFORM_invis) {
+        dc->StartGraphic(element, "", element->GetID());
+        meterSig->SetEmptyBB();
+        dc->EndGraphic(element, this);
+        return;
+    }
+
     this->DrawMeterSig(dc, meterSig, staff, 0);
 }
 
@@ -997,8 +1009,6 @@ void View::DrawKeyAccid(DeviceContext *dc, KeyAccid *keyAccid, Staff *staff, Cle
 
 void View::DrawMeterSig(DeviceContext *dc, MeterSig *meterSig, Staff *staff, int horizOffset)
 {
-    if (meterSig->GetForm() == METERFORM_invis) return;
-
     const bool hasSmallEnclosing = (meterSig->HasSym() || (meterSig->GetForm() == METERFORM_num));
     wchar_t enclosingFront, enclosingBack;
     std::tie(enclosingFront, enclosingBack) = meterSig->GetEnclosingGlyphs(hasSmallEnclosing);
@@ -1406,11 +1416,6 @@ void View::DrawRest(DeviceContext *dc, LayerElement *element, Layer *layer, Staf
     Rest *rest = vrv_cast<Rest *>(element);
     assert(rest);
 
-    if (rest->IsMensuralDur()) {
-        this->DrawMensuralRest(dc, element, layer, staff, measure);
-        return;
-    }
-
     if (rest->m_crossStaff) staff = rest->m_crossStaff;
 
     const bool drawingCueSize = rest->GetDrawingCueSize();
@@ -1494,6 +1499,25 @@ void View::DrawStem(DeviceContext *dc, LayerElement *element, Layer *layer, Staf
 
     Stem *stem = vrv_cast<Stem *>(element);
     assert(stem);
+
+    // We check if this belongs to a mensural note
+    Note *parent = vrv_cast<Note *>(stem->GetFirstAncestor(NOTE));
+    if (parent && parent->IsMensuralDur()) {
+        if (((parent->GetDrawingDur() > DUR_1) || ((parent->GetStemDir() != STEMDIRECTION_NONE)))
+            && stem->GetVisible() != BOOLEAN_false) {
+            /************** Stem/notehead direction: **************/
+            const int staffCenter
+                = staff->GetDrawingY() - m_doc->GetDrawingUnit(staff->m_drawingStaffSize) * (staff->m_drawingLines - 1);
+            const data_STEMDIRECTION stemDir
+                = (stem->HasDir()) ? stem->GetDir() : this->GetMensuralStemDir(layer, parent, staffCenter);
+            /************** Draw stem: **************/
+            dc->StartGraphic(element, "", element->GetID());
+            this->DrawMensuralStem(dc, parent, staff, stemDir, parent->GetDrawingX(), parent->GetDrawingY());
+            dc->EndGraphic(element, this);
+        }
+
+        return;
+    }
 
     // Do not draw virtual (e.g., whole note) stems
     if (stem->IsVirtual()) return;
