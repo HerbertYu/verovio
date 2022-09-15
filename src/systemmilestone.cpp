@@ -167,15 +167,6 @@ int SystemMilestoneEnd::PrepareFloatingGrps(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
-int SystemMilestoneEnd::GenerateMIDIEnd(FunctorParams *functorParams) {
-    GenerateMIDIParams *params = vrv_params_cast<GenerateMIDIParams *>(functorParams);
-    assert(params);
-    
-    params->m_repeatEndingStartTime = 0;
-
-    return FUNCTOR_CONTINUE;
-}
-
 //----------------------------------------------------------------------------
 // Interface pseudo functor (redirected)
 //----------------------------------------------------------------------------

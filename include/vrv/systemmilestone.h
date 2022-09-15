@@ -78,8 +78,6 @@ public:
      */
     int CastOffToSelection(FunctorParams *) override;
 
-    int GenerateMIDIEnd(FunctorParams *functorParams) override;
-
 protected:
     //
 private:

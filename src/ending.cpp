@@ -171,7 +171,10 @@ int Ending::PrepareFloatingGrps(FunctorParams *functorParams)
 int Ending::GenerateMIDIEnd(FunctorParams *functorParams) {
     GenerateMIDIParams *params = vrv_params_cast<GenerateMIDIParams *>(functorParams);
     assert(params);
-    params->m_repeatEndingStartTime = params->m_endTime;
+    if (GetLendsym() == LINESTARTENDSYMBOL_none)
+        params->m_repeatEndingStartTime = 0;
+    else if (params->m_repeatEndingStartTime == 0)
+        params->m_repeatEndingStartTime = params->m_endTime;
 
     return FUNCTOR_CONTINUE;
 }
