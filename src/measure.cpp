@@ -1610,6 +1610,7 @@ int Measure::GenerateMIDI(FunctorParams *functorParams)
 
     // Here we need to update the m_totalTime from the starting time of the measure.
     params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalTime;
+    params->m_endTime = params->m_totalTime + m_duration;
 
     if (params->m_midiExt) {
         params->m_midiExt->AddMeasure(
@@ -1639,14 +1640,21 @@ int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
     if (GetRight() == BARRENDITION_rptend || GetRight() == BARRENDITION_rptboth) {
 
         double endtime = params->m_totalTime + m_duration;
+        
         // Sameas not taken into account for now
         double starttime = params->m_repeatStartTime;
         auto repeatAdditionalTime = endtime - starttime;
-        params->m_repeatAdditionalTime += repeatAdditionalTime;
 
         if (GetRight() == BARRENDITION_rptboth) {
             params->m_repeatStartTime = endtime;
         }
+        
+        // Volta brackets
+        if (params->m_repeatEndingStartTime) {
+            endtime = params->m_repeatEndingStartTime;
+        }
+        
+        params->m_repeatAdditionalTime += endtime - starttime;
 
         if (params->m_handleRepeat) {
             int tpq = params->m_midiFile->getTPQ();

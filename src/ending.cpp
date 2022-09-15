@@ -168,4 +168,12 @@ int Ending::PrepareFloatingGrps(FunctorParams *functorParams)
     return FUNCTOR_CONTINUE;
 }
 
+int Ending::GenerateMIDIEnd(FunctorParams *functorParams) {
+    GenerateMIDIParams *params = vrv_params_cast<GenerateMIDIParams *>(functorParams);
+    assert(params);
+    params->m_repeatEndingStartTime = params->m_endTime;
+
+    return FUNCTOR_CONTINUE;
+}
+
 } // namespace vrv

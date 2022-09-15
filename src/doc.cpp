@@ -451,6 +451,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
             generateMIDIParams.m_deferredNotes = initMIDIParams.m_deferredNotes;
             generateMIDIParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
             generateMIDIParams.m_repeatStartTime = 0;
+            generateMIDIParams.m_repeatEndingStartTime = 0;
             generateMIDIParams.m_repeatAdditionalTime = 0;
             generateMIDIParams.m_handleRepeat = (index + 1 == (int)staves->second.child.size());
 

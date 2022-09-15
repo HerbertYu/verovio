@@ -81,6 +81,8 @@ public:
      */
     int PrepareFloatingGrps(FunctorParams *functorParams) override;
 
+    int GenerateMIDIEnd(FunctorParams *functorParams) override;
+
 private:
     //
 public:

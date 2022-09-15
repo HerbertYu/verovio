@@ -1783,6 +1783,7 @@ public:
         m_midiTrack = 1;
         m_midiChannel = 0;
         m_totalTime = 0.0;
+        m_endTime = 0.0;
         m_staffN = 0;
         m_transSemi = 0;
         m_currentTempo = MIDI_TEMPO;
@@ -1792,6 +1793,7 @@ public:
         m_functor = functor;
         m_doc = doc;
         m_repeatStartTime = 0;
+        m_repeatEndingStartTime = 0;
         m_repeatAdditionalTime = 0;
         m_midiExt = nullptr;
     }
@@ -1799,6 +1801,7 @@ public:
     int m_midiTrack;
     int m_midiChannel;
     double m_totalTime;
+    double m_endTime;
     int m_staffN;
     int m_transSemi;
     double m_currentTempo;
@@ -1813,6 +1816,7 @@ public:
     std::vector<MIDIHeldNote> m_heldNotes;
     Doc *m_doc;
     double m_repeatStartTime;
+    double m_repeatEndingStartTime;
     double m_repeatAdditionalTime;
     bool m_handleRepeat;
     MidiExt *m_midiExt;
