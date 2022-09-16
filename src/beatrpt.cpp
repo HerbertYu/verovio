@@ -87,26 +87,25 @@ int BeatRpt::GenerateMIDI(FunctorParams *functorParams)
     int tpq = params->m_midiFile->getTPQ();
 
     // filter last beat and copy all notes
-    if (params->m_handleRepeat) {
-        smf::MidiEvent event;
-        int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
-        for (int i = 0; i < eventcount; i++) {
-            event = params->m_midiFile->getEvent(params->m_midiTrack, i);
-            if (event.tick >= (starttime - beatLength) * tpq && event.tick < starttime * tpq) {
-                if (((event[0] & 0xf0) == 0x80) || ((event[0] & 0xf0) == 0x90)) {
-                    params->m_midiFile->addEvent(params->m_midiTrack, event.tick + beatLength * tpq, event);
-                }
+    smf::MidiEvent event;
+    int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
+    for (int i = 0; i < eventcount; i++) {
+        event = params->m_midiFile->getEvent(params->m_midiTrack, i);
+        if (event.tick >= (starttime - beatLength) * tpq && event.tick < starttime * tpq && event.layer == params->m_layerIndex) {
+            if (((event[0] & 0xf0) == 0x80) || ((event[0] & 0xf0) == 0x90)) {
+                params->m_midiFile->addEvent(params->m_midiTrack, event.tick + beatLength * tpq, event);
             }
         }
-        if (params->m_midiExt)
-            params->m_midiExt->CopyTimeEntry((starttime - beatLength) * tpq, starttime * tpq, beatLength * tpq);
-
-        for (int i = 0; i < beatLength * tpq; ++i) {
-            // LogWarning("%i", i);
-            // smf::MidiEvent event = params->m_midiFile->getEvent(params->m_midiTrack, starttime * tpq);
-            // event.clearVariables();
-        }
     }
+    if (params->m_midiExt)
+        params->m_midiExt->CopyTimeEntry((starttime - beatLength) * tpq, starttime * tpq, beatLength * tpq);
+
+    for (int i = 0; i < beatLength * tpq; ++i) {
+        // LogWarning("%i", i);
+        // smf::MidiEvent event = params->m_midiFile->getEvent(params->m_midiTrack, starttime * tpq);
+        // event.clearVariables();
+    }
+
     return FUNCTOR_CONTINUE;
 }
 

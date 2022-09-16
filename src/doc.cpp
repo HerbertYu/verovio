@@ -358,6 +358,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
     // track 0 (included by default) is reserved for meta messages common to all tracks
     int midiChannel = 0;
     int midiTrack = 1;
+    int layerIndex = 0;
     Filters filters;
     for (staves = initProcessingListsParams.m_layerTree.child.begin();
          staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
@@ -430,14 +431,15 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
         generateScoreDefMIDIParams.m_midiTrack = midiTrack;
         currentScoreDef->Process(&generateScoreDefMIDI, &generateScoreDefMIDIParams, &generateScoreDefMIDIEnd);
 
-        int index = 0;
-        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers, ++index) {
+        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers, ++layerIndex) {
             filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
             AttNIntegerComparison matchLayer(LAYER, layers->first);
             filters.Add(&matchStaff);
             filters.Add(&matchLayer);
+            
+            midiFile->setLayer(layerIndex);
 
             Functor generateMIDI(&Object::GenerateMIDI);
             Functor generateMIDIEnd(&Object::GenerateMIDIEnd);
@@ -452,7 +454,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
             generateMIDIParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
             generateMIDIParams.m_repeatStartTime = 0;
             generateMIDIParams.m_repeatEndingStartTime = 0;
-            generateMIDIParams.m_handleRepeat = (index + 1 == (int)staves->second.child.size());
+            generateMIDIParams.m_layerIndex = layerIndex;
             generateMIDIParams.m_segnoStartTime = 0;
             generateMIDIParams.m_segnoEndingStartTime = 0;
             generateMIDIParams.m_fineTime = 0;

@@ -105,7 +105,6 @@ namespace vrv {
             elements.emplace_back(chordDots->GetID());
         }
         entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
-        fprintf(stdout, "[MidiExt]add note:%d,staff:%d\n",pitch,staffNo);
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
         if (measure) {
             auto measureNo = -1;
@@ -123,7 +122,7 @@ namespace vrv {
             entry->pageNo = page->GetPageIdx();
         }
 
-//        fprintf(stdout, "[MidiExt]addNote track:%d,tick:%d,note:%d\n", staffNo, tick, pitch);
+        fprintf(stdout, "[MidiExt]add note tick:%d,measure:%d,pitch:%d,staff:%d\n", tick, entry->measureNo, pitch,staffNo);
     }
 
     MidiExtEntry *MidiExt::GetTimeEntry(int tick) {
@@ -156,6 +155,7 @@ namespace vrv {
         auto iter = m_measureTicks.find(fromTick);
         while (iter != m_measureTicks.end() && iter->first < endTick) {
             m_measureTicks[iter->first + addTick] = iter->second;
+            fprintf(stdout, "[MidiExt]CopyMeasure tick:%d\n", iter->first + addTick);
             iter++;
         }
     }

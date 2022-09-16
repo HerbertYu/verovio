@@ -1798,6 +1798,7 @@ public:
         m_segnoEndingStartTime = 0;
         m_fineTime = 0;
         m_repeatAdditionalDuration = 0;
+        m_layerIndex = 0;
         m_midiExt = nullptr;
     }
     smf::MidiFile *m_midiFile;
@@ -1824,7 +1825,7 @@ public:
     double m_segnoEndingStartTime;
     double m_fineTime;
     double m_repeatAdditionalDuration;
-    bool m_handleRepeat;
+    int m_layerIndex;
     MidiExt *m_midiExt;
 };
 

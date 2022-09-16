@@ -1655,14 +1655,9 @@ int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
             endTime = params->m_repeatEndingStartTime;
         }
         
-        if (params->m_handleRepeat) {
-            CopyMeasures(params, startTime, endTime, addedTime);
-        }
+        CopyMeasures(params, startTime, endTime, addedTime);
     }
     
-    if (!params->m_handleRepeat)
-        return FUNCTOR_CONTINUE;
-
     auto dirs = FindAllDescendantsByType(DIR, false);
     for (auto iter = dirs.begin(); iter != dirs.end(); ++iter) {
         auto dir = vrv_cast<Dir*>(*iter);
@@ -1703,7 +1698,7 @@ void Measure::CopyMeasures(FunctorParams *functorParams, double startTime, doubl
     int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
     for (int i = 0; i < eventcount; i++) {
         event = params->m_midiFile->getEvent(params->m_midiTrack, i);
-        if (event.tick >= startTime * tpq && event.tick < endTime * tpq) {
+        if (event.tick >= startTime * tpq && event.tick < endTime * tpq && event.layer == params->m_layerIndex) {
             auto tick = event.tick + addedTime * tpq;
             params->m_midiFile->addEvent(params->m_midiTrack, tick, event);
         }

@@ -257,6 +257,8 @@ class MidiFile {
 		static std::ostream& writeBigEndianDouble    (std::ostream& out,
 		                                              double value);
 		static std::string   getGMInstrumentName     (int patchIndex);
+    
+        void setLayer(int layerIndex);
 
 	protected:
 		// m_events == Lists of MidiEvents for each MIDI file track.
@@ -292,6 +294,8 @@ class MidiFile {
 
 		// m_linkedEventQ == True if link analysis has been done.
 		bool m_linkedEventsQ = false;
+    
+        int m_layerIndex = 0;
 
 	private:
 		int         extractMidiData                 (std::istream& inputfile,

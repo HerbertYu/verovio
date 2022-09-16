@@ -50,6 +50,7 @@ MidiEvent::MidiEvent(int aTime, int aTrack, vector<uchar>& message)
 	tick        = aTime;
 	seconds     = 0.0;
 	seq         = 0;
+    layer       = 0;
 	m_eventlink = NULL;
 }
 
@@ -59,6 +60,7 @@ MidiEvent::MidiEvent(const MidiEvent& mfevent) : MidiMessage() {
 	tick    = mfevent.tick;
 	seconds = mfevent.seconds;
 	seq     = mfevent.seq;
+    layer   = mfevent.layer;
 	m_eventlink = NULL;
 
 	this->resize(mfevent.size());
@@ -79,6 +81,7 @@ MidiEvent::~MidiEvent() {
 	tick    = -1;
 	seconds = -1.0;
 	seq     = -1;
+    layer   = -1;
 	this->resize(0);
 	m_eventlink = NULL;
 }
@@ -94,6 +97,7 @@ void MidiEvent::clearVariables(void) {
 	tick      = 0;
 	seconds   = 0.0;
 	seq       = 0;
+    layer     = 0;
 	m_eventlink = NULL;
 }
 
@@ -111,6 +115,7 @@ MidiEvent& MidiEvent::operator=(const MidiEvent& mfevent) {
 	track   = mfevent.track;
 	seconds = mfevent.seconds;
 	seq     = mfevent.seq;
+    layer   = mfevent.layer;
 	m_eventlink = NULL;
 	this->resize(mfevent.size());
 	for (int i=0; i<(int)this->size(); i++) {
