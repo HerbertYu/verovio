@@ -1705,7 +1705,7 @@ void Measure::CopyMeasures(FunctorParams *functorParams, double startTime, doubl
         event = params->m_midiFile->getEvent(params->m_midiTrack, i);
         if (event.tick >= startTime * tpq && event.tick < endTime * tpq) {
             auto tick = event.tick + addedTime * tpq;
-            params->m_midiFile->addEvent(params->m_midiTrack, params->m_layerIndex, tick, event);
+            params->m_midiFile->addEvent(params->m_midiTrack, tick, event);
         }
     }
 
