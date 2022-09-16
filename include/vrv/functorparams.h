@@ -1794,7 +1794,10 @@ public:
         m_doc = doc;
         m_repeatStartTime = 0;
         m_repeatEndingStartTime = 0;
-        m_repeatAdditionalTime = 0;
+        m_segnoStartTime = 0;
+        m_segnoEndingStartTime = 0;
+        m_fineTime = 0;
+        m_repeatAdditionalDuration = 0;
         m_midiExt = nullptr;
     }
     smf::MidiFile *m_midiFile;
@@ -1817,7 +1820,10 @@ public:
     Doc *m_doc;
     double m_repeatStartTime;
     double m_repeatEndingStartTime;
-    double m_repeatAdditionalTime;
+    double m_segnoStartTime;
+    double m_segnoEndingStartTime;
+    double m_fineTime;
+    double m_repeatAdditionalDuration;
     bool m_handleRepeat;
     MidiExt *m_midiExt;
 };

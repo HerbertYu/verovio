@@ -41,6 +41,7 @@
 #include "timemap.h"
 #include "timestamp.h"
 #include "vrv.h"
+#include "dir.h"
 
 //----------------------------------------------------------------------------
 
@@ -1609,7 +1610,7 @@ int Measure::GenerateMIDI(FunctorParams *functorParams)
     assert(params);
 
     // Here we need to update the m_totalTime from the starting time of the measure.
-    params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalTime;
+    params->m_totalTime = m_scoreTimeOffset.back() + params->m_repeatAdditionalDuration;
     params->m_endTime = params->m_totalTime + m_duration;
 
     if (params->m_midiExt) {
@@ -1639,46 +1640,79 @@ int Measure::GenerateMIDIEnd(FunctorParams *functorParams)
 
     if (GetRight() == BARRENDITION_rptend || GetRight() == BARRENDITION_rptboth) {
 
-        double endtime = params->m_totalTime + m_duration;
+        double endTime = params->m_totalTime + m_duration;
         
         // Sameas not taken into account for now
-        double starttime = params->m_repeatStartTime;
-        auto repeatAdditionalTime = endtime - starttime;
+        double startTime = params->m_repeatStartTime;
+        auto addedTime = endTime - startTime;
 
         if (GetRight() == BARRENDITION_rptboth) {
-            params->m_repeatStartTime = endtime;
+            params->m_repeatStartTime = endTime;
         }
         
         // Volta brackets
         if (params->m_repeatEndingStartTime) {
-            endtime = params->m_repeatEndingStartTime;
+            endTime = params->m_repeatEndingStartTime;
         }
         
-        params->m_repeatAdditionalTime += endtime - starttime;
-
         if (params->m_handleRepeat) {
-            int tpq = params->m_midiFile->getTPQ();
+            CopyMeasures(params, startTime, endTime, addedTime);
+        }
+    }
+    
+    if (!params->m_handleRepeat)
+        return FUNCTOR_CONTINUE;
 
-            // filter last beat and copy all notes
-            smf::MidiEvent event;
-            int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
-            for (int i = 0; i < eventcount; i++) {
-                event = params->m_midiFile->getEvent(params->m_midiTrack, i);
-                if (event.tick >= starttime * tpq && event.tick < endtime * tpq) {
-                    auto tick = event.tick + repeatAdditionalTime * tpq;
-                    params->m_midiFile->addEvent(params->m_midiTrack, tick, event);
-//                    fprintf(stdout, "[MidiFile]addEvent track:%d, from: %d, tick:%d\n",params->m_midiTrack, (int)(params->m_repeatStartTime * tpq), (int)tick);
-                }
-            }
-
-            if (params->m_midiExt) {
-                params->m_midiExt->CopyMeasures(starttime * tpq, endtime * tpq, repeatAdditionalTime * tpq);
-                params->m_midiExt->CopyTimeEntry(starttime * tpq, endtime * tpq, repeatAdditionalTime * tpq);
-            }
+    auto dirs = FindAllDescendantsByType(DIR, false);
+    for (auto iter = dirs.begin(); iter != dirs.end(); ++iter) {
+        auto dir = vrv_cast<Dir*>(*iter);
+        auto type = dir->GetType();
+        if (type == "dalsegno" || type == "dacapo") {
+            auto start = type == "dacapo" ? 0 : params->m_segnoStartTime;
+            auto end = params->m_fineTime && params->m_fineTime > start ? params->m_fineTime : params->m_segnoEndingStartTime;
+            if (end == 0) end = params->m_endTime;
+            auto addedTime = params->m_endTime - start;
+            CopyMeasures(params, start, end, addedTime);
+            params->m_segnoStartTime = 0;
+            params->m_segnoEndingStartTime = 0;
+        } else if (type == "segno") {
+            params->m_segnoStartTime = params->m_totalTime;
+        } else if (type == "fine") {
+            params->m_fineTime = params->m_endTime;
+        } else if (type == "coda") {
+            // if misstaken by tocoda, record the ending time or it will be ignored
+            params->m_segnoEndingStartTime = params->m_totalTime;
+        } else if (type == "tocoda") {
+            params->m_segnoEndingStartTime = params->m_endTime;
         }
     }
 
     return FUNCTOR_CONTINUE;
+}
+
+void Measure::CopyMeasures(FunctorParams *functorParams, double startTime, double endTime, double addedTime) {
+    GenerateMIDIParams *params = vrv_params_cast<GenerateMIDIParams *>(functorParams);
+    assert(params);
+
+    params->m_repeatAdditionalDuration += endTime - startTime;
+    
+    int tpq = params->m_midiFile->getTPQ();
+
+    // filter last beat and copy all notes
+    smf::MidiEvent event;
+    int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
+    for (int i = 0; i < eventcount; i++) {
+        event = params->m_midiFile->getEvent(params->m_midiTrack, i);
+        if (event.tick >= startTime * tpq && event.tick < endTime * tpq) {
+            auto tick = event.tick + addedTime * tpq;
+            params->m_midiFile->addEvent(params->m_midiTrack, params->m_layerIndex, tick, event);
+        }
+    }
+
+    if (params->m_midiExt) {
+        params->m_midiExt->CopyMeasures(startTime * tpq, endTime * tpq, addedTime * tpq);
+        params->m_midiExt->CopyTimeEntry(startTime * tpq, endTime * tpq, addedTime * tpq);
+    }
 }
 
 

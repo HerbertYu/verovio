@@ -452,8 +452,11 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
             generateMIDIParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
             generateMIDIParams.m_repeatStartTime = 0;
             generateMIDIParams.m_repeatEndingStartTime = 0;
-            generateMIDIParams.m_repeatAdditionalTime = 0;
             generateMIDIParams.m_handleRepeat = (index + 1 == (int)staves->second.child.size());
+            generateMIDIParams.m_segnoStartTime = 0;
+            generateMIDIParams.m_segnoEndingStartTime = 0;
+            generateMIDIParams.m_fineTime = 0;
+            generateMIDIParams.m_repeatAdditionalDuration = 0;
 
             // LogDebug("Exporting track %d ----------------", midiTrack);
             this->Process(&generateMIDI, &generateMIDIParams, &generateMIDIEnd, &filters);

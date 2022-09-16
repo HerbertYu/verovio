@@ -509,6 +509,9 @@ public:
      */
     int CacheHorizontalLayout(FunctorParams *functorParams) override;
 
+private:
+    static void CopyMeasures(FunctorParams *functorParams, double startTime, double endTime, double addedTime);
+                    
 public:
     // flags for drawing measure barline based on visibility or other conditions
     enum BarlineDrawingFlags {
