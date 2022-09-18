@@ -25,6 +25,7 @@
 #include "vrv.h"
 #include "stem.h"
 #include "tuplet.h"
+#include "layer.h"
 #include "midi/MidiFile.h"
 
 namespace vrv {
@@ -55,6 +56,7 @@ namespace vrv {
         assert(interface);
 
         auto staff = dynamic_cast<Staff *>(object->GetFirstAncestor(STAFF));
+        auto layer = dynamic_cast<Layer *>(object->GetFirstAncestor(LAYER));
         int staffNo = staff ? staff->GetN() : 0;
         auto beam = dynamic_cast<Beam *>(object->GetFirstAncestor(vrv::BEAM));
         auto tuplet = dynamic_cast<Tuplet *>(object->GetFirstAncestor(vrv::TUPLET));
@@ -104,7 +106,6 @@ namespace vrv {
         if (chordDots) {
             elements.emplace_back(chordDots->GetID());
         }
-        entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
         if (measure) {
             auto measureNo = -1;
@@ -115,14 +116,17 @@ namespace vrv {
             }
 
             entry->measureNo = measureNo;
+            
+            auto found = m_adjustedLayers.find(measureNo);
+            if (found != m_adjustedLayers.end())
+                staffNo = found->second.at(staffNo).at(layer->GetN());
+            entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
         }
 
         Page *page = dynamic_cast<Page *>(object->GetFirstAncestor(PAGE));
         if (page) {
             entry->pageNo = page->GetPageIdx();
         }
-
-        fprintf(stdout, "[MidiExt]add note tick:%d,measure:%d,pitch:%d,staff:%d\n", tick, entry->measureNo, pitch,staffNo);
     }
 
     MidiExtEntry *MidiExt::GetTimeEntry(int tick) {
@@ -147,6 +151,34 @@ namespace vrv {
                 };
             } catch (std::exception& e) {
                 fprintf(stdout, "[MidiExt]measure no error:%s\n", measure->GetN().c_str());
+            }
+            
+            std::map<int, std::map<int, int>> staffLayers;
+            auto staffs = measure->FindAllDescendantsByType(vrv::STAFF);
+            for (auto staffObj : staffs) {
+                auto staff = (vrv::Staff *) staffObj;
+                auto staffNo = staff->GetN();
+                auto layers = staff->FindAllDescendantsByType(vrv::LAYER);
+                for (auto layerObj : layers) {
+                    auto layer = (vrv::Layer *) layerObj;
+                    auto layerNo = layer->GetN();
+                    auto mspace = layer->FindDescendantByType(vrv::NOTE);
+                    if (mspace) {
+                        staffLayers[staffNo][layerNo] = staffNo;
+                    }
+                }
+            }
+            
+            if (staffLayers.size() == 1) {
+                auto layerIter = staffLayers.begin();
+                if (layerIter->second.size() == 2) {
+                    if (layerIter->first == 1) {
+                        layerIter->second.rbegin()->second = 2;
+                    } else if (layerIter->first == 2) {
+                        layerIter->second.begin()->second = 1;
+                    }
+                    m_adjustedLayers[measureNo] = staffLayers;
+                }
             }
         }
     }
@@ -181,5 +213,9 @@ namespace vrv {
 
     const std::map<std::string, int> &MidiExt::GetSystems() const {
         return m_systemUuid;
+    }
+
+    const std::map<int, std::map<int, std::map<int, int>>> &MidiExt::GetAdjustedLayers() const {
+        return m_adjustedLayers;
     }
 } // namespace vrv

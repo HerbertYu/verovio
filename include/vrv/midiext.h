@@ -81,6 +81,8 @@ namespace vrv {
 
         const std::map<std::string, int> &GetSystems() const;
 
+        const std::map<int, std::map<int, std::map<int, int>>> &GetAdjustedLayers() const;
+
     private:
         //
     public:
@@ -90,6 +92,7 @@ namespace vrv {
         std::map<int, MidiExtEntry> m_entries;
         std::map<int, MidiExtMeasure> m_measureTicks;
         std::map<std::string, int> m_systemUuid;
+        std::map<int, std::map<int, std::map<int, int>>> m_adjustedLayers; // measure:staff:layer:staff
     }; // class Timemap
 
 } // namespace vrv
