@@ -2186,8 +2186,9 @@ void MusicXmlInput::ReadMusicXmlDirection(
                         riter->first->SetTstamp2(std::pair<int, double>(measureDifference, timeStamp - 0.5));
                     }
                     if (wedge->node().attribute("spread")) {
+                        auto spread = riter->first->GetOpening().GetVu();
                         data_MEASUREMENTSIGNED opening;
-                        opening.SetVu(wedge->node().attribute("spread").as_double() / 5);
+                        opening.SetVu(std::max(spread, wedge->node().attribute("spread").as_double() / 5));
                         riter->first->SetOpening(opening);
                     }
                     m_hairpinStack.erase(std::next(riter).base());
@@ -2211,6 +2212,13 @@ void MusicXmlInput::ReadMusicXmlDirection(
                 delete hairpin;
                 return;
             }
+
+            if (wedge->node().attribute("spread")) {
+                data_MEASUREMENTSIGNED opening;
+                opening.SetVu(wedge->node().attribute("spread").as_double() / 5);
+                hairpin->SetOpening(opening);
+            }
+
             // hairpin->SetLform(hairpin->AttLineRendBase::StrToLineform(wedge.node().attribute("line-type").as_string()));
             if (wedge->node().attribute("niente")) {
                 hairpin->SetNiente(ConvertWordToBool(wedge->node().attribute("niente").as_string()));
