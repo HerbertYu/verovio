@@ -823,10 +823,14 @@ void View::DrawOctave(
         int dotShift = 0;
         if (octave->HasLform()) {
             if (octave->GetLform() == LINEFORM_solid) {
+                dc->ResetPen();
+                dc->ResetBrush();
                 dc->SetPen(m_currentColour, lineWidth, AxSOLID);
                 dc->SetBrush(m_currentColour, AxSOLID);
             }
             else if (octave->GetLform() == LINEFORM_dotted) {
+                dc->ResetPen();
+                dc->ResetBrush();
                 dc->SetPen(m_currentColour, lineWidth, AxDOT, 0, 0, AxCAP_ROUND);
                 dc->SetBrush(m_currentColour, AxSOLID);
                 dotShift = lineShift;
@@ -848,6 +852,8 @@ void View::DrawOctave(
                     ToDeviceContextX(x2), ToDeviceContextY(y1 + dotShift), ToDeviceContextX(x2), ToDeviceContextY(y2));
             }
         }
+        dc->ResetPen();
+        dc->ResetBrush();
     }
 
     if (graphic)
