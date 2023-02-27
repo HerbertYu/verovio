@@ -2678,7 +2678,7 @@ void MusicXmlInput::ReadMusicXmlNote(
             }
         }
         // we assume /note without /type or with duration of an entire bar to be mRest
-        else if (typeStr.empty() || rest.attribute("measure").as_bool()) {
+        else if (typeStr.empty() || typeStr == "whole" || rest.attribute("measure").as_bool()) {
             if (m_slash) {
                 MeterSig tmpMeterSig;
                 tmpMeterSig.SetCount({ m_meterCount, m_meterSign });
