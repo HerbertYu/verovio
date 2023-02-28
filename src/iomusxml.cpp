@@ -414,13 +414,13 @@ Layer *MusicXmlInput::SelectLayer(pugi::xml_node node, Measure *measure)
     }
 
     // // If not initialized and layer is not set - get first layer in the first staff
-    // if (!m_currentLayer) {
-    //     Staff *staff = vrv_cast<Staff *>(measure->GetChild(0, STAFF));
-    //     assert(staff);
-    //     m_currentLayer = SelectLayer(layerNum, staff);
-    //     m_isLayerInitialized = true;
-    //     return m_currentLayer;
-    // }
+     if (!m_currentLayer) {
+         Staff *staff = vrv_cast<Staff *>(measure->GetChild(0, STAFF));
+         assert(staff);
+         m_currentLayer = SelectLayer(layerNum, staff);
+         m_isLayerInitialized = true;
+         return m_currentLayer;
+     }
 
     // if not, take staff info of node element
     short int staffNum = (node.child("staff")) ? node.child("staff").text().as_int() : 1;
