@@ -311,7 +311,7 @@ void Doc::CalculateTimemap()
     m_timemapTempo = m_options->m_midiTempoAdjustment.GetValue();
 }
 
-void Doc::ExportMIDI(smf::MidiFile *midiFile)
+void Doc::ExportMIDI(smf::MidiFile *midiFile, MidiExt *midiExt)
 {
 
     if (!Doc::HasTimemap()) {
@@ -357,6 +357,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
     // track 0 (included by default) is reserved for meta messages common to all tracks
     int midiChannel = 0;
     int midiTrack = 1;
+    int layerIndex = 0;
     Filters filters;
     for (staves = initProcessingListsParams.m_layerTree.child.begin();
          staves != initProcessingListsParams.m_layerTree.child.end(); ++staves) {
@@ -429,7 +430,7 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
         generateScoreDefMIDIParams.m_midiTrack = midiTrack;
         currentScoreDef->Process(&generateScoreDefMIDI, &generateScoreDefMIDIParams, &generateScoreDefMIDIEnd);
 
-        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers) {
+        for (layers = staves->second.child.begin(); layers != staves->second.child.end(); ++layers, ++layerIndex) {
             filters.Clear();
             // Create ad comparison object for each type / @n
             AttNIntegerComparison matchStaff(STAFF, staves->first);
@@ -437,9 +438,12 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
             filters.Add(&matchStaff);
             filters.Add(&matchLayer);
 
+            midiFile->setLayer(layerIndex);
+
             Functor generateMIDI(&Object::GenerateMIDI);
             Functor generateMIDIEnd(&Object::GenerateMIDIEnd);
             GenerateMIDIParams generateMIDIParams(midiFile, &generateMIDI);
+            generateMIDIParams.m_midiExt = midiExt;
             generateMIDIParams.m_midiChannel = midiChannel;
             generateMIDIParams.m_midiTrack = midiTrack;
             generateMIDIParams.m_staffN = staves->first;
@@ -447,6 +451,13 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
             generateMIDIParams.m_currentTempo = tempo;
             generateMIDIParams.m_deferredNotes = initMIDIParams.m_deferredNotes;
             generateMIDIParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
+            generateMIDIParams.m_repeatStartTime = 0;
+            generateMIDIParams.m_repeatEndingStartTime = 0;
+            generateMIDIParams.m_layerIndex = layerIndex;
+            generateMIDIParams.m_segnoStartTime = 0;
+            generateMIDIParams.m_segnoEndingStartTime = 0;
+            generateMIDIParams.m_fineTime = 0;
+            generateMIDIParams.m_repeatAdditionalDuration = 0;
 
             // LogDebug("Exporting track %d ----------------", midiTrack);
             this->Process(&generateMIDI, &generateMIDIParams, &generateMIDIEnd, &filters);
@@ -467,7 +478,7 @@ bool Doc::ExportTimemap(std::string &output, bool includeRests, bool includeMeas
     }
     Timemap timemap;
     Functor generateTimemap(&Object::GenerateTimemap);
-    GenerateTimemapParams generateTimemapParams(&timemap, &generateTimemap);
+    GenerateTimemapParams generateTimemapParams(this, &timemap, &generateTimemap);
     generateTimemapParams.m_cueExclusion = this->GetOptions()->m_midiNoCue.GetValue();
     this->Process(&generateTimemap, &generateTimemapParams);
 

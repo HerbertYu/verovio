@@ -1044,6 +1044,7 @@ int Chord::GenerateMIDI(FunctorParams *functorParams)
         }
 
         params->m_graceNotes.push_back({ pitches, quarterDuration });
+        params->m_graceRefs.push_back(this);
 
         bool accented = (this->GetGrace() == GRACE_acc);
         GraceGrp *graceGrp = vrv_cast<GraceGrp *>(this->GetFirstAncestor(GRACEGRP));

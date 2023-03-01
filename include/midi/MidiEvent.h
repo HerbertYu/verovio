@@ -57,6 +57,7 @@ class MidiEvent : public MidiMessage {
 		int        track;    // [original] track number of event in MIDI file
 		double     seconds;  // calculated time in sec. (after doTimeAnalysis())
 		int        seq;      // sorting sequence number of event
+        int        layer;
 
 	private:
 		MidiEvent* m_eventlink;  // used to match note-ons and note-offs

@@ -475,6 +475,8 @@ public:
      */
     int GenerateMIDI(FunctorParams *functorParams) override;
 
+    int GenerateMIDIEnd(FunctorParams *functorParams) override;
+
     /**
      * See Object::GenerateTimemap
      */
@@ -507,6 +509,9 @@ public:
      * See Object::CacheHorizontalLayout
      */
     int CacheHorizontalLayout(FunctorParams *functorParams) override;
+
+private:
+    static void CopyMeasures(FunctorParams *functorParams, double startTime, double endTime, double addedTime);
 
 public:
     // flags for drawing measure barline based on visibility or other conditions
@@ -588,6 +593,7 @@ private:
     std::vector<double> m_scoreTimeOffset;
     std::vector<double> m_realTimeOffsetMilliseconds;
     double m_currentTempo;
+    double m_duration;
 
     std::map<int, BarlineRenditionPair> m_invisibleStaffBarlines;
 };

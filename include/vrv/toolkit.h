@@ -365,6 +365,8 @@ public:
      */
     std::string RenderToMIDI();
 
+    void RenderToMIDI(smf::MidiFile* midiFile, MidiExt* midiExt);
+
     /**
      * Render a document to MIDI and save it to the file.
      *

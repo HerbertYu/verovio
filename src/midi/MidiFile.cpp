@@ -1642,6 +1642,7 @@ MidiEvent* MidiFile::addEvent(int aTrack, int aTick,
 	me->tick = aTick;
 	me->track = aTrack;
 	me->setMessage(midiData);
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1732,6 +1733,8 @@ MidiEvent* MidiFile::addText(int aTrack, int aTick, const std::string& text) {
 	MidiEvent* me = new MidiEvent;
 	me->makeText(text);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1747,6 +1750,8 @@ MidiEvent* MidiFile::addCopyright(int aTrack, int aTick, const std::string& text
 	MidiEvent* me = new MidiEvent;
 	me->makeCopyright(text);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1762,6 +1767,8 @@ MidiEvent* MidiFile::addTrackName(int aTrack, int aTick, const std::string& name
 	MidiEvent* me = new MidiEvent;
 	me->makeTrackName(name);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1778,6 +1785,8 @@ MidiEvent* MidiFile::addInstrumentName(int aTrack, int aTick,
 	MidiEvent* me = new MidiEvent;
 	me->makeInstrumentName(name);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1793,6 +1802,8 @@ MidiEvent* MidiFile::addLyric(int aTrack, int aTick, const std::string& text) {
 	MidiEvent* me = new MidiEvent;
 	me->makeLyric(text);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1808,6 +1819,8 @@ MidiEvent* MidiFile::addMarker(int aTrack, int aTick, const std::string& text) {
 	MidiEvent* me = new MidiEvent;
 	me->makeMarker(text);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1823,6 +1836,8 @@ MidiEvent* MidiFile::addCue(int aTrack, int aTick, const std::string& text) {
 	MidiEvent* me = new MidiEvent;
 	me->makeCue(text);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1838,6 +1853,8 @@ MidiEvent* MidiFile::addTempo(int aTrack, int aTick, double aTempo) {
 	MidiEvent* me = new MidiEvent;
 	me->makeTempo(aTempo);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1862,6 +1879,8 @@ MidiEvent* MidiFile::addKeySignature (int aTrack, int aTick, int fifths, bool mo
     MidiEvent* me = new MidiEvent;
     me->makeKeySignature(fifths, mode);
     me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
     m_events[aTrack]->push_back_no_copy(me);
     return me;
 }
@@ -1896,6 +1915,8 @@ MidiEvent* MidiFile::addTimeSignature(int aTrack, int aTick, int top, int bottom
 	MidiEvent* me = new MidiEvent;
 	me->makeTimeSignature(top, bottom, clocksPerClick, num32ndsPerQuarter);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -1988,6 +2009,8 @@ MidiEvent* MidiFile::addNoteOn(int aTrack, int aTick, int aChannel, int key, int
 	MidiEvent* me = new MidiEvent;
 	me->makeNoteOn(aChannel, key, vel);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -2004,6 +2027,8 @@ MidiEvent* MidiFile::addNoteOff(int aTrack, int aTick, int aChannel, int key,
 	MidiEvent* me = new MidiEvent;
 	me->makeNoteOff(aChannel, key, vel);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -2020,6 +2045,8 @@ MidiEvent* MidiFile::addNoteOff(int aTrack, int aTick, int aChannel, int key) {
 	MidiEvent* me = new MidiEvent;
 	me->makeNoteOff(aChannel, key);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -2037,6 +2064,8 @@ MidiEvent* MidiFile::addController(int aTrack, int aTick, int aChannel,
 	MidiEvent* me = new MidiEvent;
 	me->makeController(aChannel, num, value);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -2054,6 +2083,8 @@ MidiEvent* MidiFile::addPatchChange(int aTrack, int aTick, int aChannel,
 	MidiEvent* me = new MidiEvent;
 	me->makePatchChange(aChannel, patchnum);
 	me->tick = aTick;
+    me->track = aTrack;
+    me->layer = m_layerIndex;
 	m_events[aTrack]->push_back_no_copy(me);
 	return me;
 }
@@ -3440,6 +3471,9 @@ std::string MidiFile::base64Decode(const std::string& input) {
 	return output;
 }
 
+void MidiFile::setLayer(int layerIndex) {
+    m_layerIndex = layerIndex;
+}
 
 
 } // end namespace smf

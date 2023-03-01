@@ -25,6 +25,7 @@
 //----------------------------------------------------------------------------
 
 #include "MidiFile.h"
+#include "midiext.h"
 
 namespace vrv {
 
@@ -90,14 +91,14 @@ int BeatRpt::GenerateMIDI(FunctorParams *functorParams)
     int eventcount = params->m_midiFile->getEventCount(params->m_midiTrack);
     for (int i = 0; i < eventcount; i++) {
         event = params->m_midiFile->getEvent(params->m_midiTrack, i);
-        if (event.tick > starttime * tpq)
-            break;
-        else if (event.tick >= (starttime - beatLength) * tpq) {
+        if (event.tick >= (starttime - beatLength) * tpq && event.tick < starttime * tpq && event.layer == params->m_layerIndex) {
             if (((event[0] & 0xf0) == 0x80) || ((event[0] & 0xf0) == 0x90)) {
                 params->m_midiFile->addEvent(params->m_midiTrack, event.tick + beatLength * tpq, event);
             }
         }
     }
+    if (params->m_midiExt)
+        params->m_midiExt->CopyTimeEntry((starttime - beatLength) * tpq, starttime * tpq, beatLength * tpq);
 
     for (int i = 0; i < beatLength * tpq; ++i) {
         // LogWarning("%i", i);

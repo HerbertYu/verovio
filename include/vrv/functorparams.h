@@ -1787,6 +1787,7 @@ public:
         m_midiTrack = 1;
         m_midiChannel = 0;
         m_totalTime = 0.0;
+        m_endTime = 0.0;
         m_staffN = 0;
         m_transSemi = 0;
         m_currentTempo = MIDI_TEMPO;
@@ -1794,11 +1795,20 @@ public:
         m_accentedGraceNote = false;
         m_cueExclusion = false;
         m_functor = functor;
+        m_repeatStartTime = 0;
+        m_repeatEndingStartTime = 0;
+        m_segnoStartTime = 0;
+        m_segnoEndingStartTime = 0;
+        m_fineTime = 0;
+        m_repeatAdditionalDuration = 0;
+        m_layerIndex = 0;
+        m_midiExt = nullptr;
     }
     smf::MidiFile *m_midiFile;
     int m_midiTrack;
     int m_midiChannel;
     double m_totalTime;
+    double m_endTime;
     int m_staffN;
     int m_transSemi;
     double m_currentTempo;
@@ -1806,10 +1816,19 @@ public:
     std::map<Note *, MIDINoteSequence> m_expandedNotes;
     std::map<Note *, double> m_deferredNotes;
     MIDIChordSequence m_graceNotes;
+    std::vector<Object*> m_graceRefs;
     bool m_accentedGraceNote;
     bool m_cueExclusion;
     Functor *m_functor;
     std::vector<MIDIHeldNote> m_heldNotes;
+    double m_repeatStartTime;
+    double m_repeatEndingStartTime;
+    double m_segnoStartTime;
+    double m_segnoEndingStartTime;
+    double m_fineTime;
+    double m_repeatAdditionalDuration;
+    int m_layerIndex;
+    MidiExt *m_midiExt;
 };
 
 //----------------------------------------------------------------------------
@@ -1827,7 +1846,7 @@ public:
 
 class GenerateTimemapParams : public FunctorParams {
 public:
-    GenerateTimemapParams(Timemap *timemap, Functor *functor)
+    GenerateTimemapParams(Doc *doc, Timemap *timemap, Functor *functor)
     {
         m_scoreTimeOffset = 0.0;
         m_realTimeOffsetMilliseconds = 0;
@@ -1835,11 +1854,13 @@ public:
         m_cueExclusion = false;
         m_timemap = timemap;
         m_functor = functor;
+        m_doc = doc;
     }
     double m_scoreTimeOffset;
     double m_realTimeOffsetMilliseconds;
     double m_currentTempo;
     bool m_cueExclusion;
+    Doc *m_doc;
     Timemap *m_timemap;
     Functor *m_functor;
 };
