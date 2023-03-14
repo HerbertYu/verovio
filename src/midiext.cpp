@@ -106,6 +106,7 @@ namespace vrv {
         if (chordDots) {
             elements.emplace_back(chordDots->GetID());
         }
+        auto duration = (int)(object->GetDurationInterface()->GetScoreTimeDuration() * 120);
         Measure *measure = dynamic_cast<Measure *>(object->GetFirstAncestor(MEASURE));
         if (measure) {
             auto measureNo = -1;
@@ -117,7 +118,7 @@ namespace vrv {
 
             entry->measureNo = measureNo;
             
-            entry->notesOn.emplace(pitch, std::make_pair(staffNo, elements));
+            entry->pitches.emplace(pitch, MidiExtPitch{duration, staffNo, elements});
         }
 
         Page *page = dynamic_cast<Page *>(object->GetFirstAncestor(PAGE));
@@ -156,7 +157,6 @@ namespace vrv {
         auto iter = m_measureTicks.find(fromTick);
         while (iter != m_measureTicks.end() && iter->first < endTick) {
             m_measureTicks[iter->first + addTick] = iter->second;
-            fprintf(stdout, "[MidiExt]CopyMeasure tick:%d\n", iter->first + addTick);
             iter++;
         }
     }

@@ -31,9 +31,14 @@ namespace vrv {
 /**
  * Helper struct to store timemap entries
  */
+    struct MidiExtPitch {
+        int duration;
+        int staff;
+        std::vector<std::string> ids;
+    };
     struct MidiExtEntry {
+        std::map<int, MidiExtPitch> pitches;
         std::map<int, std::pair<int, std::vector<std::string>>> notesOn;    // pitch:staff:ids
-        std::map<int, std::pair<int, std::vector<std::string>>> notesOff;
         int measureNo;
         int pageNo;
     };
